@@ -1,0 +1,1444 @@
+<!doctype html>
+<html lang="ru" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f4f4f5">
+<meta name="description" content="Отклик — приватный тренажёр голоса.">
+<title>Отклик — пространство твоего голоса</title>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
+:root {
+  color-scheme: light;
+  --bg: #f4f4f5;
+  --surface: #ffffff;
+  --surface2: #f8f8fa;
+  --text: #18181b;
+  --muted: #71717a;
+  --border: #e4e4e7;
+  --purple: #8b5cf6;
+  --pink: #d946ef;
+  --green: #10b981;
+  --red: #ef4444;
+  --blue: #4d6bfe;
+  --gradient: linear-gradient(135deg, var(--purple), var(--pink));
+  --shadow: 0 8px 30px rgba(0,0,0,.06);
+  --r: 24px;
+  --nav-bg: rgba(255,255,255,.85);
+}
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #09090b;
+  --surface: #18181b;
+  --surface2: #1f1f23;
+  --text: #f4f4f5;
+  --muted: #a1a1aa;
+  --border: #27272a;
+  --shadow: 0 8px 30px rgba(0,0,0,.5);
+  --nav-bg: rgba(24,24,27,.85);
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;min-height:100vh;background-color:var(--bg);color:var(--text);font-family:Manrope,system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+button,input,textarea,select{font:inherit}button{cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--purple);outline-offset:3px}
+
+body.theme-anim,
+body.theme-anim *,
+body.theme-anim *:before,
+body.theme-anim *:after{
+  transition: background-color .3s ease, color .3s ease, border-color .3s ease, box-shadow .3s ease, fill .3s ease, stroke .3s ease !important;
+}
+
+body:before,body:after{content:"";position:fixed;width:360px;height:360px;filter:blur(100px);opacity:.15;z-index:-1;pointer-events:none;border-radius:50%}
+body:before{top:-180px;left:-140px;background:var(--purple)}
+body:after{right:-160px;bottom:-180px;background:var(--pink)}
+
+.app{width:100%;margin:0;padding:calc(20px + env(safe-area-inset-top)) 18px calc(108px + env(safe-area-inset-bottom));display:none;}
+.app.ready{display:block;}
+
+@media (min-width:720px){
+  .app{padding-left:28px;padding-right:28px;}
+}
+@media (min-width:1100px){
+  .app{padding-left:40px;padding-right:40px;}
+}
+
+.auth-screen{position:fixed;inset:0;background:var(--bg);z-index:1000;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:20px;text-align:center;transition:opacity .35s ease;}
+.auth-screen.hidden{opacity:0;pointer-events:none;}
+.auth-logo{font-size:48px;margin-bottom:20px;filter:drop-shadow(0 0 20px rgba(139,92,246,0.5));animation:authFadeUp .8s cubic-bezier(0.2, 0.8, 0.2, 1) .05s both;}
+.auth-title{font-size:28px;font-weight:800;letter-spacing:-1px;margin-bottom:10px;animation:authFadeUp .9s cubic-bezier(0.2, 0.8, 0.2, 1) .3s both;}
+.auth-desc{font-size:14px;color:var(--muted);line-height:1.6;max-width:300px;margin-bottom:40px;animation:authFadeUp .9s cubic-bezier(0.2, 0.8, 0.2, 1) .8s both;}
+.btn-google{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;max-width:320px;padding:16px;border-radius:16px;background:#fff;color:#000;font-weight:800;font-size:15px;border:1px solid var(--border);transition:transform 0.2s ease, filter 0.3s ease, box-shadow 0.3s ease;box-shadow:var(--shadow);animation:authBtnIn 1s cubic-bezier(0.2, 0.8, 0.2, 1) 1.35s both;}
+.btn-google:hover{filter:brightness(0.97)}
+.btn-google:active{transform:scale(0.98);}
+
+@keyframes authFadeUp {
+  from { opacity: 0; transform: translateY(24px); filter: blur(8px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+@keyframes authBtnIn {
+  0% { opacity: 0; transform: translateY(24px) scale(0.9); }
+  60% { opacity: 1; transform: translateY(-4px) scale(1.02); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.modal{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.4);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .25s ease, backdrop-filter .35s ease}
+.modal.open{opacity:1;pointer-events:auto}
+.modal-panel{width:min(100%,560px);max-height:90dvh;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:28px;padding:30px 24px;transform:translateY(20px) scale(0.95);transition:transform .3s cubic-bezier(0.2, 0.8, 0.2, 1), background-color .3s ease, border-color .3s ease; box-shadow:var(--shadow); position:relative;}
+.modal.open .modal-panel{transform:translateY(0) scale(1);}
+.modal h2{font-size:21px;letter-spacing:-.04em;margin:0 0 8px; font-weight:800;}
+.modal p{font-size:13px;line-height:1.6;color:var(--muted);margin:0 0 20px}
+
+.modal-controls{position:absolute;top:16px;right:16px;display:flex;gap:8px;z-index:2}
+.ctrl-btn{width:36px;height:36px;border-radius:50%;background:var(--surface2);border:1.5px solid var(--border);color:var(--text);display:grid;place-items:center;cursor:pointer;font-size:16px;padding:0;line-height:1;transition:background-color .25s ease, transform .15s ease, border-color .25s ease;}
+.ctrl-btn:hover{background:var(--border)}
+.ctrl-btn:active{transform:scale(0.9)}
+
+#settingsModal .modal-panel{padding-top:68px}
+
+.onb-step{display:none; opacity: 0; transform: translateX(30px); transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);}
+.onb-step.active{display:block; opacity: 1; transform: translateX(0);}
+.onb-step.exit{display:block; opacity: 0; transform: translateX(-30px); position: absolute; pointer-events: none; width: calc(100% - 48px);}
+.onb-options{display:grid;gap:10px;margin-bottom:24px;}
+.onb-option{padding:16px;border:1.5px solid var(--border);border-radius:16px;background:var(--surface2);font-size:14px;font-weight:600;color:var(--text);text-align:left;transition:all .25s ease;cursor:pointer;}
+.onb-option:hover{border-color:var(--purple);}
+.onb-option.selected{border-color:var(--purple);background:rgba(139,92,246,0.1);box-shadow:0 0 0 2px rgba(139,92,246,0.2);}
+.avatar-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px;}
+.avatar-opt{width:100%;aspect-ratio:1;font-size:24px;display:flex;align-items:center;justify-content:center;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;cursor:pointer;transition:all .2s ease;}
+.avatar-opt.selected{border-color:var(--purple);background:rgba(139,92,246,0.2);transform:scale(1.05);}
+
+.field-label{display:block;color:var(--muted);font-size:12px;font-weight:800;margin:0 0 8px}
+.input,.textarea,.select{width:100%;background:var(--surface2);color:var(--text);border:1.5px solid var(--border);border-radius:14px;padding:14px;font-size:14px;transition:border-color .2s;}
+.input:focus{border-color:var(--purple);}
+.input-wrapper{position:relative; display:flex; align-items:center;}
+.input-wrapper .at-symbol{position:absolute; left:14px; color:var(--muted); font-weight:bold;}
+.input-wrapper input{padding-left:32px;}
+
+.profile-header{display:flex;align-items:center;gap:16px;margin-bottom:24px;}
+.profile-avatar{width:64px;height:64px;border-radius:20px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:32px;border:1.5px solid var(--border);cursor:pointer;padding:0;font-family:inherit;flex:none;transition:border-color .25s ease, background-color .25s ease, transform .15s ease;}
+.profile-avatar:hover{border-color:var(--purple)}
+.profile-avatar:active{transform:scale(0.96)}
+.profile-avatar .avatar-text{display:block;transition:opacity .18s ease;}
+.profile-avatar.pop-in{animation:avatarPop .45s cubic-bezier(0.2, 0.8, 0.2, 1);}
+@keyframes avatarPop {
+  0% { transform: scale(0.6); }
+  55% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+.profile-info{flex:1;min-width:0;}
+.profile-info p{margin:4px 0 0;color:var(--muted);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.profile-name-input{font-family:inherit;font-size:18px;font-weight:700;color:var(--text);background:transparent;border:1px solid transparent;border-radius:8px;padding:4px 8px;margin:-4px -8px;width:calc(100% + 16px);transition:border-color .2s, background-color .2s;}
+.profile-name-input:hover{background:var(--surface2)}
+.profile-name-input:focus{background:var(--surface2);border-color:var(--purple);outline:none;}
+
+.avatar-picker{display:grid;grid-template-rows:0fr;transition:grid-template-rows .55s cubic-bezier(0.4, 0, 0.2, 1);}
+.avatar-picker.open{grid-template-rows:1fr;}
+.avatar-picker-inner{overflow:hidden;min-height:0;padding:0;border-radius:16px;background-color:var(--surface2);opacity:0;transition:padding .4s cubic-bezier(0.4, 0, 0.2, 1), opacity .3s ease;}
+.avatar-picker.open .avatar-picker-inner{padding:12px;opacity:1;}
+.avatar-picker .avatar-grid{margin:0;}
+
+.settings-section{margin-bottom:22px;}
+.settings-section:last-child{margin-bottom:0;}
+.settings-label{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:12px;}
+.settings-hint{font-size:11px;line-height:1.6;color:var(--muted);margin:0 0 12px;display:block;}
+
+.no-select{user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;}
+
+.chat-container{display:flex;flex-direction:column;height:300px;background:var(--surface2);border:1.5px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:16px;}
+.chat-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;}
+.chat-bubble{max-width:80%;padding:10px 14px;border-radius:16px;font-size:13px;line-height:1.4;}
+.chat-bubble.user{align-self:flex-end;background:var(--purple);color:#fff;border-bottom-right-radius:4px;}
+.chat-bubble.owner{align-self:flex-start;background:var(--border);color:var(--text);border-bottom-left-radius:4px;}
+.chat-input-row{display:flex;gap:8px;padding:12px;background:var(--surface);border-top:1.5px solid var(--border);}
+.chat-input-row input{flex:1;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:10px 14px;color:var(--text); outline:none;}
+.chat-input-row button{padding:0 16px;background:var(--purple);border:none;border-radius:12px;color:#fff;font-weight:bold;}
+
+header{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:24px}
+.eyebrow{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.13em;font-weight:800}
+.greeting{font-size:25px;line-height:1.2;letter-spacing:-.04em;font-weight:800;margin-top:5px}
+.subgreeting{font-size:13px;color:var(--muted);margin-top:7px}
+
+.avatar{position:relative;width:52px;height:52px;border-radius:17px;display:grid;place-items:center;font-weight:800;font-size:24px;color:white;border:none;cursor:pointer;padding:0;font-family:inherit;z-index:1;
+  background:linear-gradient(135deg, #5BCEFA 0%, #F5A9B8 22%, #FFFFFF 42%, #F5A9B8 60%, #5BCEFA 82%, #F5A9B8 100%);
+  background-size:400% 400%;
+  animation: transFlag 10s ease-in-out infinite, avatarGlow 3.5s ease-in-out infinite;
+  transition:transform .18s ease;
+}
+.avatar:hover{transform:scale(1.05);}
+.avatar:active{transform:scale(0.95);}
+.avatar .avatar-emoji{filter:drop-shadow(0 1px 2px rgba(0,0,0,0.28));}
+@keyframes transFlag {
+  0%,100%{background-position:0% 50%;}
+  50%{background-position:100% 50%;}
+}
+@keyframes avatarGlow {
+  0%,100%{box-shadow:0 0 14px 3px rgba(91,206,250,.45), 0 0 28px 8px rgba(245,169,184,.22);}
+  50%{box-shadow:0 0 22px 7px rgba(245,169,184,.55), 0 0 42px 16px rgba(91,206,250,.3);}
+}
+
+.page{display:none;animation:appear .25s ease}
+.page.active{display:block}
+@keyframes appear{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r);padding:17px;box-shadow:var(--shadow);transition:background-color .3s ease, border-color .3s ease}
+.stat-card{min-height:112px;position:relative;overflow:hidden}
+.stat-label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:800}
+.stat-number{font-size:29px;font-weight:800;letter-spacing:-.04em;margin-top:10px;line-height:1.1}
+.stat-number small{font-size:12px;color:var(--muted);letter-spacing:0;font-weight:600}
+.stat-icon{float:right;font-size:18px}
+
+.section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:25px 2px 13px}
+.section-head h2{font-size:17px;letter-spacing:-.03em;margin:0}
+.section-head p{font-size:12px;color:var(--muted);margin:5px 0 0}
+
+.hero{padding:20px;position:relative;overflow:hidden}
+.hero-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;position:relative}
+.hero h2{font-size:19px;margin:0;letter-spacing:-.04em}
+.hero p{font-size:12px;color:var(--muted);line-height:1.6;margin:7px 0 0}
+.pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);border-radius:99px;padding:7px 10px;font-size:11px;font-weight:800;white-space:nowrap}
+.pill.green{border-color:rgba(16,185,129,.3);background:rgba(16,185,129,.1);color:var(--green)}
+
+.mode-select{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:16px 0}
+.mode{border:1.5px solid var(--border);border-radius:14px;background:var(--surface2);color:var(--muted);padding:11px 4px;font-size:11px;font-weight:800;transition:.2s; cursor:pointer;}
+.mode span{display:block;font-size:17px;margin-bottom:5px}
+.mode.selected{background:rgba(139,92,246,.1);border-color:var(--purple);color:var(--purple);box-shadow:inset 0 0 0 1px rgba(139,92,246,.2)}
+
+.graph-controls{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:14px 0 8px;flex-wrap:wrap}
+.graph-badge{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:6px 10px;font-size:12px;font-weight:800;display:inline-flex;gap:5px;align-items:baseline;box-shadow:0 2px 10px rgba(0,0,0,.04);}
+.graph-badge small{font-size:10px;color:var(--muted);font-weight:600}
+.graph-modes{display:flex;gap:4px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:3px;}
+.gmode{border:0;background:transparent;color:var(--muted);font-size:10px;font-weight:800;padding:5px 10px;border-radius:7px;cursor:pointer;transition:all .2s ease;font-family:inherit;}
+.gmode:hover{color:var(--text);}
+.gmode.active{background:var(--surface);color:var(--purple);box-shadow:0 1px 3px rgba(0,0,0,0.08);}
+
+.graph-wrap{height:260px;position:relative;background:var(--surface2);border:1.5px solid var(--border);border-radius:18px;overflow:hidden;}
+.graph-wrap canvas{width:100%;height:100%;display:block;}
+.graph-legend{display:flex;justify-content:space-between;color:var(--muted);font-size:10px;padding:8px 2px 0}
+.graph-legend b{color:var(--green);font-weight:700}
+
+.mascot-row{display:flex;align-items:center;justify-content:center;gap:13px;padding:14px 0 12px;position:relative}
+.mascot{width:64px;height:64px;overflow:visible;animation:bob 3s ease-in-out infinite;transition:filter .25s}
+.mascot.happy{filter:drop-shadow(0 0 12px rgba(16,185,129,.4))}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-5px) rotate(2deg)}}
+.mascot-copy{max-width:230px}
+.mascot-copy strong{font-size:13px;display:block}
+.mascot-copy span{display:block;font-size:11px;color:var(--muted);line-height:1.5;margin-top:4px}
+
+.session-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}
+.mini-stat{background:var(--surface2);border:1.5px solid var(--border);border-radius:14px;padding:10px;text-align:center}
+.mini-stat strong{display:block;font-size:17px}
+.mini-stat span{display:block;color:var(--muted);font-size:10px;margin-top:3px}
+
+.btn{border:0;border-radius:16px;min-height:50px;padding:13px 16px;display:flex;justify-content:center;align-items:center;gap:9px;font-weight:800;font-size:13px;font-family:inherit;cursor:pointer;transition:transform .16s ease, filter .3s ease, background-color .3s ease, color .3s ease, border-color .3s ease, box-shadow .3s ease;}
+.btn:active{transform:scale(.985)}
+.btn-primary{width:100%;color:white;background:var(--gradient);box-shadow:0 8px 25px rgba(139,92,246,.3)}
+.btn-primary:hover{filter:brightness(0.96)}
+.btn-secondary{background:var(--surface2);border:1.5px solid var(--border);color:var(--text)}
+.btn-secondary:hover{background:var(--border);filter:brightness(0.98)}
+.btn-danger{background:rgba(239,68,68,.1);border:1.5px solid rgba(239,68,68,.3);color:var(--red)}
+.btn-danger:hover{background:rgba(239,68,68,.15)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+.btn-delete{position:relative;width:100%;background-color:transparent;background-image:linear-gradient(var(--red), var(--red));background-repeat:no-repeat;background-position:left center;background-size:0% 100%;background-clip:padding-box;border:1.5px solid rgba(239,68,68,.35);color:var(--red);transition:background-size .8s cubic-bezier(.65,0,.35,1), color .2s ease, border-color .4s ease;}
+.btn-delete:hover{background-size:100% 100%;color:#fff;border-color:var(--red)}
+.btn-link-email{position:relative;width:100%;background-color:transparent;background-image:linear-gradient(var(--blue), var(--blue));background-repeat:no-repeat;background-position:left center;background-size:0% 100%;background-clip:padding-box;border:1.5px solid rgba(77,107,254,.35);color:var(--blue);transition:background-size .8s cubic-bezier(.65,0,.35,1), color .2s ease, border-color .4s ease;}
+.btn-link-email:hover{background-size:100% 100%;color:#fff;border-color:var(--blue)}
+
+.notice{font-size:11px;line-height:1.6;color:var(--muted);display:flex;gap:8px;margin:13px 2px 0}
+.notice b{color:var(--text)}
+
+.progress-line{height:6px;background:var(--border);border-radius:99px;overflow:hidden;margin:11px 0 5px}
+.progress-line span{display:block;height:100%;width:0;background:var(--gradient);border-radius:inherit;transition:width .2s}
+
+.empty{text-align:center;padding:28px 18px;color:var(--muted);font-size:12px;line-height:1.7}
+
+.history-list{display:grid;gap:10px}
+.session-item{display:flex;align-items:center;gap:12px}
+.session-symbol{width:42px;height:42px;border-radius:14px;background:rgba(139,92,246,.1);display:grid;place-items:center;font-size:19px;flex:none; color:var(--purple);}
+.session-details{flex:1;min-width:0}
+.session-details strong{display:block;font-size:12px}
+.session-details span{display:block;color:var(--muted);font-size:10px;margin-top:4px}
+.session-score{text-align:right;font-weight:800;font-size:14px}
+
+.bottom-nav{position:fixed;z-index:20;bottom:calc(10px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:min(calc(100% - 24px),380px);padding:8px;display:grid;grid-template-columns:repeat(2,1fr);gap:5px;background:var(--nav-bg);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1.5px solid var(--border);border-radius:22px;box-shadow:0 12px 45px rgba(0,0,0,.1);transition:background-color .3s ease, border-color .3s ease}
+.nav-item{border:0;background:transparent;color:var(--muted);border-radius:15px;padding:9px 4px;display:flex;flex-direction:column;align-items:center;gap:5px;font-size:10px;font-weight:800; cursor:pointer;transition:background-color .25s ease, color .25s ease}
+.nav-item .nav-icon{font-size:18px;line-height:1}
+.nav-item.active{color:var(--purple);background:rgba(139,92,246,.1)}
+
+.toast{position:fixed;left:50%;bottom:calc(95px + env(safe-area-inset-bottom));transform:translate(-50%,10px);z-index:50;background:var(--text);border:1px solid var(--border);color:var(--bg);border-radius:14px;padding:12px 16px;font-size:12px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:.2s;max-width:calc(100% - 30px);text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+.settings-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--border);font-size:13px}
+.settings-row:last-child{border-bottom:0}
+.settings-row span{color:var(--muted);font-size:11px}
+
+@media (min-width:900px){
+  #page-home{display:flex;flex-direction:column;gap:20px}
+  #page-home .grid2{margin:0}
+  .graph-wrap{height:340px}
+  .bottom-nav{width:min(calc(100% - 48px),420px);bottom:20px}
+}
+
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+
+<div class="auth-screen" id="authScreen">
+  <div class="auth-logo">✦</div>
+  <div class="auth-title">Добро пожаловать в Отклик</div>
+  <div class="auth-desc">Безопасное пространство для тренировки голоса. Войди, чтобы сохранять свой прогресс в облаке.</div>
+  <button class="btn-google" id="googleLoginBtn">
+    <svg viewBox="0 0 48 48" width="20" height="20"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.6 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.4-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.2 5.6l6.2 5.2C41 35.3 44 30.1 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+    Войти через Google
+  </button>
+</div>
+
+<div class="modal" id="onboardingModal">
+  <div class="modal-panel">
+    <div class="onb-step active" id="step-goal">
+      <h2>Давай познакомимся</h2>
+      <p>Какая у тебя цель?</p>
+      <div class="onb-options" id="onbGoalOptions">
+        <button class="onb-option" data-val="feminine">Сделать голос более женственным</button>
+        <button class="onb-option" data-val="masculine">Сделать голос более мужественным</button>
+        <button class="onb-option" data-val="neutral">Нейтральный / андрогинный голос</button>
+        <button class="onb-option" data-val="stabilize">Стабилизировать и говорить увереннее</button>
+      </div>
+      <button class="btn btn-primary" id="nextToIdentity" disabled>Продолжить</button>
+    </div>
+
+    <div class="onb-step" id="step-identity">
+      <h2>Как ты себя ощущаешь?</h2>
+      <p>Это поможет нам лучше понимать нашу аудиторию.</p>
+      <div class="onb-options" id="onbIdentityOptions">
+        <button class="onb-option" data-val="trans_woman">Транс-девушка</button>
+        <button class="onb-option" data-val="trans_man">Транс-парень</button>
+        <button class="onb-option" data-val="nonbinary">Небинарная персона</button>
+        <button class="onb-option" data-val="other">Другое</button>
+        <button class="onb-option" data-val="prefer_not_to_say">Не хочу отвечать</button>
+      </div>
+      <button class="btn btn-primary" id="nextToProfile" disabled>Продолжить</button>
+    </div>
+
+    <div class="onb-step" id="step-profile">
+      <h2>Твой профиль</h2>
+      <p>Выбери аватар и придумай имя.</p>
+      <label class="field-label">Аватар</label>
+      <div class="avatar-grid" id="avatarGrid">
+        <button class="avatar-opt" data-val="🦊">🦊</button><button class="avatar-opt" data-val="🌸">🌸</button>
+        <button class="avatar-opt" data-val="✨">✨</button><button class="avatar-opt" data-val="🦋">🦋</button>
+        <button class="avatar-opt" data-val="🌙">🌙</button><button class="avatar-opt" data-val="🐱">🐱</button>
+        <button class="avatar-opt" data-val="🌿">🌿</button><button class="avatar-opt" data-val="🔥">🔥</button>
+        <button class="avatar-opt" data-val="🎧">🎧</button><button class="avatar-opt" data-val="🎨">🎨</button>
+      </div>
+      <label class="field-label">Никнейм</label>
+      <input class="input" id="onbNickname" placeholder="Как к тебе обращаться?" maxlength="30" style="margin-bottom: 16px;">
+      <label class="field-label">Username (уникальный)</label>
+      <div class="input-wrapper" style="margin-bottom: 24px;">
+        <span class="at-symbol">@</span>
+        <input class="input" id="onbUsername" placeholder="username" maxlength="20" autocomplete="off">
+      </div>
+      <button class="btn btn-primary" id="onbFinish">Завершить</button>
+    </div>
+  </div>
+</div>
+
+<div class="app" id="mainApp">
+  <header>
+    <div><div class="eyebrow">Тихое пространство для практики</div><div class="greeting" id="appGreeting">Отклик<span aria-hidden="true"> ✦</span></div><div class="subgreeting" id="headerSubtitle">Твой голос — твой путь</div></div>
+    <button class="avatar" id="settingsOpen" aria-label="Настройки"><span class="avatar-emoji" id="mainAvatarEmoji">🦊</span></button>
+  </header>
+
+  <section class="page active" id="page-home" aria-label="Главная">
+    <article class="card hero">
+      <div class="hero-top"><div><h2>Настрой голос на себя</h2><p>Небольшая регулярная практика важнее идеального результата.</p></div><span class="pill" id="statusPill">● Готово</span></div>
+      <div class="mode-select" role="group" aria-label="Программа тренировки">
+        <button class="mode selected" data-mode="fem"><span>✿</span>Феминизация</button>
+        <button class="mode" data-mode="masc"><span>◈</span>Маскулинизация</button>
+        <button class="mode" data-mode="steady"><span>〰</span>Стабилизация</button>
+      </div>
+      <div class="graph-controls">
+        <div class="graph-badge"><span id="hzBadge">— Hz</span> <small id="pitchQuality">· ожидание</small></div>
+        <div class="graph-modes" role="group" aria-label="Стиль графика">
+          <button class="gmode active" data-graph="line" title="Линия">Линия</button>
+          <button class="gmode" data-graph="area" title="Область">Область</button>
+          <button class="gmode" data-graph="glow" title="Свечение">Свечение</button>
+        </div>
+      </div>
+      <div class="graph-wrap"><canvas id="voiceCanvas"></canvas></div>
+      <div class="graph-legend"><span>60 Гц</span><b id="targetLegend">Цель: 165–255 Гц</b><span>350 Гц</span></div>
+      <div class="mascot-row">
+        <svg class="mascot" id="mascot" viewBox="0 0 100 100" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="50" cy="50" r="42" stroke="var(--purple)" id="mascotBody"/>
+          <path d="M20 27 Q10 10 30 20" stroke="var(--purple)" stroke-width="3"/><path d="M80 27 Q90 10 70 20" stroke="var(--purple)" stroke-width="3"/>
+          <path id="eyeL" d="M31 44h7" stroke="var(--text)"/><path id="eyeR" d="M62 44h7" stroke="var(--text)"/><path id="mouth" d="M40 64 Q50 64 60 64" stroke="var(--text)"/>
+          <circle id="spark1" cx="14" cy="42" r="2" fill="var(--green)" stroke="none" opacity="0"/><circle id="spark2" cx="84" cy="30" r="3" fill="var(--pink)" stroke="none" opacity="0"/>
+        </svg>
+        <div class="mascot-copy"><strong id="mascotTitle">Можно начинать ✨</strong><span id="mascotText">Говори естественно и без напряжения. Мы будем отслеживать высоту тона.</span></div>
+      </div>
+      <div class="session-meta">
+        <div class="mini-stat"><strong id="elapsedValue">00:00</strong><span>Время сессии</span></div>
+        <div class="mini-stat"><strong id="inTargetValue">00:00</strong><span>В целевой зоне</span></div>
+        <div class="mini-stat"><strong id="avgPitchValue">—</strong><span>Средний тон, Гц</span></div>
+      </div>
+      <button class="btn btn-primary" id="micBtn">🎙️ Начать тренировку</button>
+      <button class="btn btn-secondary" id="finishBtn" style="display:none;margin-top:9px;" disabled>Завершить</button>
+      <div class="notice"><span>🔒</span><span><b>Приватно по умолчанию.</b> Звук анализируется в браузере. Данные сохраняются в твоём аккаунте.</span></div>
+    </article>
+
+    <div class="grid2">
+      <article class="card stat-card"><span class="stat-icon">🔥</span><div class="stat-label">Текущий стрик</div><div class="stat-number"><span id="streakValue">0</span> <small>дн.</small></div><div class="progress-line"><span id="streakProgress"></span></div><div style="font-size:10px;color:var(--muted)" id="streakHint">Начни с одной короткой практики</div></article>
+      <article class="card stat-card"><span class="stat-icon">◷</span><div class="stat-label">В целевой зоне</div><div class="stat-number"><span id="totalTarget">0</span> <small>мин</small></div><div style="font-size:10px;color:var(--muted);margin-top:8px" id="totalSessions">0 сохранённых сессий</div></article>
+    </div>
+  </section>
+
+  <section class="page" id="page-trainer" aria-label="Тренажёр">
+    <div class="section-head" style="margin-top:0"><div><h2>Тренажёр</h2><p>Практикуйся короткими комфортными подходами</p></div></div>
+    <article class="card">
+      <h2 style="font-size:16px;margin:0 0 8px">Перед началом</h2><p style="font-size:12px;color:var(--muted);line-height:1.7;margin:0">Сядь удобно, расслабь шею и плечи. Не пытайся силой удерживать высоту: если появляется боль, першение или усталость, остановись и отдохни.</p>
+      <div class="settings-row"><div>Феминизация <span>Мягкая практика более высокого тона</span></div><strong>165–255 Гц</strong></div>
+      <div class="settings-row"><div>Маскулинизация <span>Комфортная практика более низкого тона</span></div><strong>85–145 Гц</strong></div>
+      <div class="settings-row"><div>Стабилизация <span>Удержание выбранного диапазона</span></div><strong>120–200 Гц</strong></div>
+      <button class="btn btn-primary" style="margin-top:18px" data-go="home">Перейти к тренировке</button>
+    </article>
+    <div class="section-head"><div><h2>Последние сессии</h2><p>История в облаке</p></div></div>
+    <div class="history-list" id="recentSessions"></div>
+  </section>
+</div>
+
+<nav class="bottom-nav" id="bottomNav" style="display:none;">
+  <button class="nav-item active" data-nav="home"><span class="nav-icon">⌂</span>Главная</button>
+  <button class="nav-item" data-nav="trainer"><span class="nav-icon">〰</span>Тренажёр</button>
+</nav>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<div class="modal" id="resultModal" role="dialog" aria-modal="true">
+  <div class="modal-panel">
+    <div style="text-align:center;margin-bottom:20px"><div style="font-size:42px">✨</div><h2>Сессия завершена</h2><p id="resultSubtitle">Ты уделила время себе — это уже результат.</p></div>
+    <div class="grid2">
+      <div class="card" style="text-align:center;padding:14px"><strong id="resultTarget" style="font-size:24px">0 сек</strong><div style="font-size:10px;color:var(--muted)">В целевой зоне</div></div>
+      <div class="card" style="text-align:center;padding:14px"><strong id="resultAverage" style="font-size:24px">—</strong><div style="font-size:10px;color:var(--muted)">Средний тон</div></div>
+    </div>
+    <button class="btn btn-primary" id="saveSessionBtn">Сохранить в аккаунт</button>
+    <button class="btn btn-secondary" id="discardSessionBtn" style="width:100%;margin-top:9px">Удалить</button>
+  </div>
+</div>
+
+<div class="modal" id="settingsModal" role="dialog" aria-modal="true">
+  <div class="modal-panel">
+    <div class="modal-controls">
+      <button class="ctrl-btn" id="themeToggle" aria-label="Сменить тему">🌙</button>
+      <button class="ctrl-btn" data-close="settingsModal" aria-label="Закрыть">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div class="profile-header">
+      <button class="profile-avatar" id="settingsAvatar" aria-label="Изменить аватар"><span class="avatar-text" id="settingsAvatarText">🦊</span></button>
+      <div class="profile-info">
+        <input class="profile-name-input" id="settingsNickname" maxlength="30" placeholder="Твоё имя" value="Пользователь">
+        <p id="settingsEmail">email@gmail.com</p>
+      </div>
+    </div>
+
+    <div class="avatar-picker" id="avatarPicker">
+      <div class="avatar-picker-inner">
+        <div class="avatar-grid" id="settingsAvatarGrid">
+          <button class="avatar-opt" data-val="🦊">🦊</button><button class="avatar-opt" data-val="🌸">🌸</button>
+          <button class="avatar-opt" data-val="✨">✨</button><button class="avatar-opt" data-val="🦋">🦋</button>
+          <button class="avatar-opt" data-val="🌙">🌙</button><button class="avatar-opt" data-val="🐱">🐱</button>
+          <button class="avatar-opt" data-val="🌿">🌿</button><button class="avatar-opt" data-val="🔥">🔥</button>
+          <button class="avatar-opt" data-val="🎧">🎧</button><button class="avatar-opt" data-val="🎨">🎨</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-label no-select">Действия</div>
+      <button class="btn btn-secondary" style="width:100%;margin-bottom:8px; justify-content:flex-start;" id="openSupportBtn">💬 Поддержка (чат)</button>
+      <button class="btn btn-secondary" style="width:100%;justify-content:flex-start;" id="openFeedbackBtn">📝 Оставить отзыв / Жалобу</button>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-label no-select">Безопасность</div>
+      <p class="settings-hint no-select">Привяжи email, чтобы не потерять доступ, если Google-аккаунт будет утерян.</p>
+      <button class="btn btn-link-email" id="linkEmailBtn">Привязать Email</button>
+    </div>
+
+    <button class="btn btn-delete" style="margin-top:8px;" id="deleteAccountBtn">Удалить аккаунт навсегда</button>
+    <button class="btn btn-danger" style="width:100%;margin-top:9px;" id="logoutBtn">Выйти из аккаунта</button>
+  </div>
+</div>
+
+<div class="modal" id="deleteAccountModal" role="dialog" aria-modal="true">
+  <div class="modal-panel">
+    <div class="modal-controls">
+      <button class="ctrl-btn" data-close-delete="1" aria-label="Закрыть">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+      </button>
+    </div>
+    <div style="text-align:center;margin-bottom:20px;">
+      <div style="font-size:42px;">⚠️</div>
+      <h2>Удалить аккаунт?</h2>
+      <p>Это действие <b style="color:var(--red)">необратимо</b>. Все данные будут утеряны навсегда: сессии, настройки, профиль. Восстановить аккаунт невозможно.</p>
+    </div>
+    <button class="btn btn-danger" id="confirmDeleteBtn" disabled style="width:100%;">Удалить (10)</button>
+    <button class="btn btn-secondary" id="cancelDeleteBtn" style="width:100%;margin-top:9px;">Отмена</button>
+  </div>
+</div>
+
+<div class="modal" id="feedbackModal" role="dialog" aria-modal="true">
+  <div class="modal-panel">
+    <h2>Обратная связь</h2>
+    <p>Нашли баг или есть идея? Напишите нам.</p>
+    <form id="feedbackForm">
+      <select class="input" id="fbType" style="margin-bottom:10px;">
+        <option value="bug">🐛 Ошибка / Баг</option>
+        <option value="idea">💡 Идея / Предложение</option>
+        <option value="complaint">⚠️ Жалоба</option>
+        <option value="other">💬 Другое</option>
+      </select>
+      <textarea class="textarea" id="fbText" placeholder="Опишите детали..." required></textarea>
+      <button class="btn btn-primary" type="submit" style="margin-top:10px;">Отправить</button>
+    </form>
+    <button class="btn btn-secondary" style="width:100%;margin-top:9px;" onclick="closeModal('feedbackModal')">Отмена</button>
+  </div>
+</div>
+
+<div class="modal" id="supportModal" role="dialog" aria-modal="true">
+  <div class="modal-panel" style="padding-bottom:0;">
+    <h2>Поддержка</h2>
+    <p>Ответим при первой возможности.</p>
+    <div class="chat-container">
+      <div class="chat-messages" id="chatMessages"></div>
+      <div class="chat-input-row">
+        <input type="text" id="chatInput" placeholder="Написать сообщение...">
+        <button id="chatSendBtn">Отпр.</button>
+      </div>
+    </div>
+    <button class="btn btn-secondary" style="width:100%;margin-bottom:24px;" onclick="closeModal('supportModal')">Закрыть</button>
+  </div>
+</div>
+
+<div class="modal" id="linkEmailModal" role="dialog" aria-modal="true">
+  <div class="modal-panel">
+    <h2>Привязка Email</h2>
+    <p>Введите email и пароль. Теперь вы сможете входить через них.</p>
+    <input class="input" type="email" id="linkEmailInput" placeholder="you@example.com" style="margin-bottom:10px;">
+    <input class="input" type="password" id="linkPassInput" placeholder="Пароль (мин. 6 символов)" style="margin-bottom:20px;">
+    <button class="btn btn-primary" id="confirmLinkEmailBtn">Привязать</button>
+    <button class="btn btn-secondary" style="width:100%;margin-top:9px;" onclick="closeModal('linkEmailModal')">Отмена</button>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut, linkWithCredential, EmailAuthProvider, deleteUser, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, deleteDoc, updateDoc, getDocs, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyA0qezCgiRp-ii8aaIiGfeRlls8PyEckLI",
+  authDomain: "otklik-1.firebaseapp.com",
+  projectId: "otklik-1",
+  storageBucket: "otklik-1.firebasestorage.app",
+  messagingSenderId: "76811353674",
+  appId: "1:76811353674:web:1669efc4014509385430b3"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+setPersistence(auth, browserLocalPersistence).catch(console.error);
+const db = getFirestore(app);
+
+let currentUser = null;
+let userData = null;
+let unsubscribeSessions = null;
+let unsubscribeChat = null;
+let deleteTimer = null;
+
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => [...document.querySelectorAll(s)];
+
+window.openModal = (id) => { document.getElementById(id).classList.add('open'); document.body.style.overflow = 'hidden'; };
+window.closeModal = (id) => { document.getElementById(id).classList.remove('open'); if(!document.querySelector('.modal.open')) document.body.style.overflow = ''; };
+
+const savedTheme = localStorage.getItem('theme') || 'light';
+document.documentElement.dataset.theme = savedTheme;
+
+function updateThemeIcon(theme) {
+  const btn = $('#themeToggle');
+  if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+}
+updateThemeIcon(savedTheme);
+
+function applyTheme(theme) {
+  document.body.classList.add('theme-anim');
+  document.documentElement.dataset.theme = theme;
+  localStorage.setItem('theme', theme);
+  updateThemeIcon(theme);
+  clearTimeout(applyTheme._t);
+  applyTheme._t = setTimeout(() => document.body.classList.remove('theme-anim'), 400);
+}
+
+$('#themeToggle').addEventListener('click', () => {
+  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  applyTheme(next);
+});
+
+$$('[data-close]').forEach(b => b.addEventListener('click', () => closeModal(b.dataset.close)));
+
+$$('.modal').forEach(m => {
+  m.addEventListener('click', (e) => {
+    if (e.target !== m) return;
+    if (m.id === 'deleteAccountModal') { cancelDelete(); return; }
+    if (m.id === 'onboardingModal') return;
+    closeModal(m.id);
+  });
+});
+
+function showToast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+function navigate(page) {
+  $$('.page').forEach(p => p.classList.toggle('active', p.id === `page-${page}`));
+  $$('[data-nav]').forEach(b => b.classList.toggle('active', b.dataset.nav === page));
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+$$('[data-nav]').forEach(b => b.addEventListener('click', () => navigate(b.dataset.nav)));
+$$('[data-go]').forEach(b => b.addEventListener('click', () => navigate(b.dataset.go)));
+
+$('#googleLoginBtn').addEventListener('click', async () => {
+  const provider = new GoogleAuthProvider();
+  try {
+    await signInWithPopup(auth, provider);
+  } catch (e) {
+    showToast('Ошибка входа: ' + e.message);
+  }
+});
+
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    currentUser = user;
+    $('#authScreen').classList.add('hidden');
+
+    const docRef = doc(db, 'users', user.uid);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists() && docSnap.data().onboardingCompleted) {
+      userData = docSnap.data();
+      initAppUI();
+    } else {
+      $('#onboardingModal').classList.add('open');
+      if(!$('#onbUsername').value) {
+          $('#onbUsername').value = 'user_' + Math.random().toString(36).substring(2, 7);
+      }
+    }
+  } else {
+    currentUser = null;
+    userData = null;
+    $('#authScreen').classList.remove('hidden');
+    $('#mainApp').classList.remove('ready');
+    $('#bottomNav').style.display = 'none';
+    if (unsubscribeSessions) unsubscribeSessions();
+    if (unsubscribeChat) unsubscribeChat();
+  }
+});
+
+let onbGoal = null, onbIdentity = null;
+$('#onbGoalOptions').addEventListener('click', (e) => {
+  const btn = e.target.closest('.onb-option'); if(!btn) return;
+  $$('#onbGoalOptions .onb-option').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected'); onbGoal = btn.dataset.val;
+  $('#nextToIdentity').disabled = !onbGoal;
+});
+$('#nextToIdentity').addEventListener('click', () => {
+  $('#step-goal').classList.remove('active');
+  $('#step-goal').classList.add('exit');
+  setTimeout(() => {
+    $('#step-goal').style.display = 'none';
+    $('#step-identity').classList.add('active');
+  }, 300);
+});
+
+$('#onbIdentityOptions').addEventListener('click', (e) => {
+  const btn = e.target.closest('.onb-option'); if(!btn) return;
+  $$('#onbIdentityOptions .onb-option').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected'); onbIdentity = btn.dataset.val;
+  $('#nextToProfile').disabled = !onbIdentity;
+});
+$('#nextToProfile').addEventListener('click', () => {
+  $('#step-identity').classList.remove('active');
+  $('#step-identity').classList.add('exit');
+  setTimeout(() => {
+    $('#step-identity').style.display = 'none';
+    $('#step-profile').classList.add('active');
+  }, 300);
+});
+
+let onbAvatar = '🦊';
+$('#avatarGrid').addEventListener('click', (e) => {
+  const btn = e.target.closest('.avatar-opt'); if(!btn) return;
+  $$('#avatarGrid .avatar-opt').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected'); onbAvatar = btn.dataset.val;
+});
+$('#avatarGrid').querySelector('.avatar-opt').classList.add('selected');
+
+const usernameInput = $('#onbUsername');
+usernameInput.addEventListener('input', function() {
+  let val = this.value.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+  this.value = val;
+});
+
+$('#onbFinish').addEventListener('click', async () => {
+  const nick = $('#onbNickname').value.trim();
+  const uname = $('#onbUsername').value.trim().toLowerCase();
+
+  if (!nick || !uname) { showToast('Заполни имя и username'); return; }
+  if (uname.length < 3) { showToast('Username должен быть не короче 3 символов'); return; }
+  if (!currentUser) { showToast('Ошибка авторизации'); return; }
+
+  $('#onbFinish').disabled = true;
+  $('#onbFinish').textContent = 'Проверка...';
+
+  try {
+    const usernameDocRef = doc(db, 'usernames', uname);
+    const usernameSnap = await getDoc(usernameDocRef);
+
+    if (usernameSnap.exists()) {
+      showToast('Этот username уже занят. Попробуй другой.');
+      $('#onbFinish').disabled = false;
+      $('#onbFinish').textContent = 'Завершить';
+      return;
+    }
+
+    userData = {
+      email: currentUser.email,
+      goal: onbGoal,
+      identity: onbIdentity,
+      profile: { nickname: nick, username: uname, avatar: onbAvatar },
+      onboardingCompleted: true,
+      createdAt: serverTimestamp(),
+      streak: 0,
+      lastPracticeDate: null
+    };
+
+    await setDoc(doc(db, 'users', currentUser.uid), userData, { merge: true });
+    await setDoc(doc(db, 'usernames', uname), { uid: currentUser.uid });
+
+    confetti({
+      particleCount: 150,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ['#8b5cf6', '#d946ef', '#10b981', '#fbbf24']
+    });
+
+    setTimeout(() => {
+      closeModal('onboardingModal');
+      initAppUI();
+      showToast('Добро пожаловать в Отклик!');
+    }, 1000);
+
+  } catch (e) {
+    console.error("Ошибка сохранения:", e);
+    showToast('Ошибка сохранения: ' + e.message);
+    $('#onbFinish').disabled = false;
+    $('#onbFinish').textContent = 'Завершить';
+  }
+});
+
+function initAppUI() {
+  $('#mainApp').classList.add('ready');
+  $('#bottomNav').style.display = 'grid';
+
+  $('#headerSubtitle').textContent = `Рада видеть тебя, ${userData.profile.nickname}`;
+  $('#settingsAvatarText').textContent = userData.profile.avatar || '🦊';
+  $('#settingsNickname').value = userData.profile.nickname;
+  $('#settingsEmail').textContent = userData.email || currentUser.email || '';
+  $('#mainAvatarEmoji').textContent = userData.profile.avatar || '🦊';
+
+  $$('#settingsAvatarGrid .avatar-opt').forEach(b => {
+    b.classList.toggle('selected', b.dataset.val === userData.profile.avatar);
+  });
+
+  if (userData.goal === 'feminine') activeMode = 'fem';
+  else if (userData.goal === 'masculine') activeMode = 'masc';
+  else activeMode = 'steady';
+
+  $$('.mode').forEach(b => b.classList.toggle('selected', b.dataset.mode === activeMode));
+  $('#targetLegend').textContent = `Цель: ${currentMode().low}–${currentMode().high} Гц`;
+
+  setupRealtimeListeners();
+  requestAnimationFrame(resizeCanvas);
+}
+
+function setupRealtimeListeners() {
+  const uid = currentUser.uid;
+
+  if (unsubscribeSessions) unsubscribeSessions();
+  const qSessions = query(collection(db, 'users', uid, 'sessions'), orderBy('createdAt', 'desc'));
+  unsubscribeSessions = onSnapshot(qSessions, (snap) => {
+    const sessions = [];
+    snap.forEach(doc => sessions.push({ id: doc.id, ...doc.data() }));
+    renderStats(sessions);
+    renderRecent(sessions);
+  });
+}
+
+let audioCtx=null, stream=null, analyser=null, sourceNode=null, audioBuffer=null;
+let running=false, rafId=0, smoothPitch=null, lastValidAt=0, lastFrameAt=0, session=null, pendingSession=null;
+let canvas=$('#voiceCanvas'), canvasCtx=canvas.getContext('2d');
+let activeMode = 'fem';
+let graphStyle = 'line';
+const MODES = {
+ fem:{label:'Феминизация',low:165,high:255,icon:'✿'},
+ masc:{label:'Маскулинизация',low:85,high:145,icon:'◈'},
+ steady:{label:'Стабилизация',low:120,high:200,icon:'〰'}
+};
+function currentMode(){return MODES[activeMode]}
+
+const HISTORY_WINDOW_MS = 12000;
+const SAMPLE_INTERVAL_MS = 60;
+const MAX_HISTORY_POINTS = Math.ceil(HISTORY_WINDOW_MS / SAMPLE_INTERVAL_MS) + 40;
+let pitchHistory = [];
+let lastDisplaySample = 0;
+
+$$('.mode').forEach(b => b.addEventListener('click', () => {
+  if (running) { showToast('Заверши тренировку'); return; }
+  activeMode = b.dataset.mode;
+  $$('.mode').forEach(m => m.classList.toggle('selected', m === b));
+  $('#targetLegend').textContent = `Цель: ${currentMode().low}–${currentMode().high} Гц`;
+  drawGraph();
+}));
+
+$$('.gmode').forEach(b => b.addEventListener('click', () => {
+  graphStyle = b.dataset.graph;
+  $$('.gmode').forEach(g => g.classList.toggle('active', g === b));
+  drawGraph();
+}));
+
+function resizeCanvas(){
+  const rect = canvas.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.max(1, Math.round(rect.width * dpr));
+  canvas.height = Math.max(1, Math.round(rect.height * dpr));
+  canvasCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  drawGraph();
+}
+
+function yForHz(hz, h) {
+  const clamped = Math.max(60, Math.min(350, hz));
+  return h - ((clamped - 60) / (350 - 60)) * h;
+}
+
+function interpolateGaps(data, maxGap) {
+  const result = data.map(p => ({ t: p.t, v: p.v }));
+  let i = 0;
+  while (i < result.length) {
+    if (result[i].v == null) {
+      let j = i;
+      while (j < result.length && result[j].v == null) j++;
+      const gapLen = j - i;
+      if (i > 0 && j < result.length && gapLen <= maxGap) {
+        const v1 = result[i-1].v, v2 = result[j].v;
+        const t1 = result[i-1].t, t2 = result[j].t;
+        const span = t2 - t1 || 1;
+        for (let k = i; k < j; k++) {
+          const frac = (result[k].t - t1) / span;
+          result[k].v = v1 + (v2 - v1) * frac;
+        }
+      }
+      i = j;
+    } else i++;
+  }
+  return result;
+}
+
+function getSegments(points) {
+  const segments = [];
+  let current = [];
+  for (const p of points) {
+    if (p.y == null) {
+      if (current.length > 0) { segments.push(current); current = []; }
+    } else current.push(p);
+  }
+  if (current.length > 0) segments.push(current);
+  return segments;
+}
+
+function strokeSmoothPath(ctx, seg) {
+  if (seg.length < 2) {
+    if (seg.length === 1) {
+      ctx.beginPath();
+      ctx.arc(seg[0].x, seg[0].y, 1.8, 0, Math.PI*2);
+      ctx.fillStyle = ctx.strokeStyle;
+      ctx.fill();
+    }
+    return;
+  }
+  ctx.beginPath();
+  ctx.moveTo(seg[0].x, seg[0].y);
+  for (let i = 1; i < seg.length - 1; i++) {
+    const xc = (seg[i].x + seg[i+1].x) / 2;
+    const yc = (seg[i].y + seg[i+1].y) / 2;
+    ctx.quadraticCurveTo(seg[i].x, seg[i].y, xc, yc);
+  }
+  const last = seg[seg.length - 1];
+  ctx.lineTo(last.x, last.y);
+  ctx.stroke();
+}
+
+function fillSmoothArea(ctx, seg, h) {
+  if (seg.length < 2) return;
+  ctx.beginPath();
+  ctx.moveTo(seg[0].x, seg[0].y);
+  for (let i = 1; i < seg.length - 1; i++) {
+    const xc = (seg[i].x + seg[i+1].x) / 2;
+    const yc = (seg[i].y + seg[i+1].y) / 2;
+    ctx.quadraticCurveTo(seg[i].x, seg[i].y, xc, yc);
+  }
+  const last = seg[seg.length - 1];
+  ctx.lineTo(last.x, last.y);
+  ctx.lineTo(last.x, h);
+  ctx.lineTo(seg[0].x, h);
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, 'rgba(139,92,246,0.42)');
+  grad.addColorStop(0.7, 'rgba(217,70,239,0.14)');
+  grad.addColorStop(1, 'rgba(139,92,246,0)');
+  ctx.fillStyle = grad;
+  ctx.fill();
+}
+
+function drawGraph(){
+  if (!canvasCtx) return;
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  if (!w || !h) return;
+  canvasCtx.clearRect(0, 0, w, h);
+
+  for (let hz = 100; hz <= 350; hz += 50) {
+    const y = yForHz(hz, h);
+    canvasCtx.strokeStyle = 'rgba(150,150,150,0.08)';
+    canvasCtx.lineWidth = 1;
+    canvasCtx.beginPath(); canvasCtx.moveTo(0, y); canvasCtx.lineTo(w, y); canvasCtx.stroke();
+  }
+
+  const mode = currentMode();
+  const top = yForHz(mode.high, h), bottom = yForHz(mode.low, h);
+  canvasCtx.fillStyle = 'rgba(16,185,129,0.09)';
+  canvasCtx.fillRect(0, top, w, bottom - top);
+  canvasCtx.strokeStyle = 'rgba(16,185,129,0.38)';
+  canvasCtx.setLineDash([4, 6]);
+  canvasCtx.beginPath();
+  canvasCtx.moveTo(0, top); canvasCtx.lineTo(w, top);
+  canvasCtx.moveTo(0, bottom); canvasCtx.lineTo(w, bottom);
+  canvasCtx.stroke();
+  canvasCtx.setLineDash([]);
+
+  const now = performance.now();
+  const windowStart = now - HISTORY_WINDOW_MS;
+  const cutoff = now - HISTORY_WINDOW_MS * 1.6;
+  while (pitchHistory.length > 0 && pitchHistory[0].t < cutoff) pitchHistory.shift();
+
+  const visible = pitchHistory.filter(p => p.t >= windowStart);
+  const filled = interpolateGaps(visible, 8);
+  const points = filled.map(p => ({
+    x: ((p.t - windowStart) / HISTORY_WINDOW_MS) * w,
+    y: p.v == null ? null : yForHz(p.v, h)
+  }));
+
+  const segments = getSegments(points);
+
+  if (graphStyle === 'line') {
+    canvasCtx.lineWidth = 2.5;
+    canvasCtx.lineCap = 'round';
+    canvasCtx.lineJoin = 'round';
+    canvasCtx.strokeStyle = '#8b5cf6';
+    for (const seg of segments) strokeSmoothPath(canvasCtx, seg);
+  } else if (graphStyle === 'area') {
+    for (const seg of segments) fillSmoothArea(canvasCtx, seg, h);
+    canvasCtx.lineWidth = 2.5;
+    canvasCtx.lineCap = 'round';
+    canvasCtx.lineJoin = 'round';
+    canvasCtx.strokeStyle = '#8b5cf6';
+    for (const seg of segments) strokeSmoothPath(canvasCtx, seg);
+  } else if (graphStyle === 'glow') {
+    canvasCtx.save();
+    canvasCtx.shadowColor = 'rgba(217,70,239,0.85)';
+    canvasCtx.shadowBlur = 14;
+    canvasCtx.lineWidth = 2.8;
+    canvasCtx.lineCap = 'round';
+    canvasCtx.lineJoin = 'round';
+    canvasCtx.strokeStyle = '#a78bfa';
+    for (const seg of segments) strokeSmoothPath(canvasCtx, seg);
+    canvasCtx.restore();
+    canvasCtx.lineWidth = 2;
+    canvasCtx.lineCap = 'round';
+    canvasCtx.lineJoin = 'round';
+    canvasCtx.strokeStyle = '#c4b5fd';
+    for (const seg of segments) strokeSmoothPath(canvasCtx, seg);
+  }
+}
+
+function rmsOf(buf){let sum=0;for(let i=0;i<buf.length;i++)sum+=buf[i]*buf[i];return Math.sqrt(sum/buf.length)}
+function detectPitch(buf,sampleRate){
+  const rms = rmsOf(buf); if (rms < 0.012) return null;
+  let mean = 0; for (let i = 0; i < buf.length; i++) mean += buf[i]; mean /= buf.length;
+  const x = new Float32Array(buf.length); for (let i = 0; i < buf.length; i++) x[i] = buf[i] - mean;
+  const minHz = 65, maxHz = 350;
+  const minLag = Math.floor(sampleRate / maxHz);
+  const maxLag = Math.min(Math.floor(sampleRate / minHz), x.length - 2);
+  let bestLag = -1, bestCorr = 0;
+  const correlations = new Float32Array(maxLag + 2);
+  for (let lag = minLag; lag <= maxLag; lag++) {
+    let cross = 0, left = 0, right = 0;
+    const limit = x.length - lag;
+    for (let i = 0; i < limit; i++) { const a = x[i], b = x[i + lag]; cross += a * b; left += a * a; right += b * b; }
+    const corr = cross / Math.sqrt((left * right) || 1);
+    correlations[lag] = corr;
+    if (corr > bestCorr) { bestCorr = corr; bestLag = lag; }
+  }
+  if (bestLag < 0 || bestCorr < 0.58) return null;
+  for (let lag = minLag + 1; lag < bestLag; lag++) {
+    if (correlations[lag] > 0.88 && correlations[lag] >= correlations[lag - 1] && correlations[lag] >= correlations[lag + 1]) {
+      bestLag = lag; bestCorr = correlations[lag]; break;
+    }
+  }
+  let shift = 0;
+  const a = correlations[bestLag - 1] || 0, b = correlations[bestLag] || 0, c = correlations[bestLag + 1] || 0;
+  const denom = a - 2 * b + c;
+  if (Math.abs(denom) > 1e-7) shift = Math.max(-0.5, Math.min(0.5, 0.5 * (a - c) / denom));
+  const hz = sampleRate / (bestLag + shift);
+  return hz >= minHz && hz <= maxHz ? { hz, confidence: bestCorr, rms } : null;
+}
+
+function stopTracks(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}if(audioCtx){audioCtx.close().catch(()=>{});audioCtx=null}analyser=null;sourceNode=null}
+
+function updateMascot(state){
+  const body = $('#mascotBody'), l = $('#eyeL'), r = $('#eyeR'), mouth = $('#mouth'), mascot = $('#mascot');
+  mascot.classList.toggle('happy', state === 'happy');
+  if (state === 'happy') {
+    body.setAttribute('stroke', 'var(--green)');
+    l.setAttribute('d', 'M30 44 Q34 37 38 44');
+    r.setAttribute('d', 'M62 44 Q66 37 70 44');
+    mouth.setAttribute('d', 'M35 62 Q50 80 65 62');
+    $('#spark1').setAttribute('opacity', '.95');
+    $('#spark2').setAttribute('opacity', '.95');
+    $('#mascotTitle').textContent = 'Попадание в цель ✨';
+    $('#mascotText').textContent = 'Хорошо! Оставайся в комфортном диапазоне.';
+  } else if (state === 'low' || state === 'high') {
+    body.setAttribute('stroke', 'var(--pink)');
+    l.setAttribute('d', 'M31 43 Q34 39 37 43');
+    r.setAttribute('d', 'M63 43 Q66 39 69 43');
+    mouth.setAttribute('d', 'M42 67 Q50 56 58 67');
+    $('#spark1').setAttribute('opacity', '0');
+    $('#spark2').setAttribute('opacity', '0');
+    $('#mascotTitle').textContent = state === 'low' ? 'Чуть ниже диапазона' : 'Чуть выше диапазона';
+    $('#mascotText').textContent = 'Мягко скорректируй высоту, если удобно.';
+  } else {
+    body.setAttribute('stroke', 'var(--purple)');
+    l.setAttribute('d', 'M31 44h7');
+    r.setAttribute('d', 'M62 44h7');
+    mouth.setAttribute('d', 'M40 64 Q50 64 60 64');
+    $('#spark1').setAttribute('opacity', '0');
+    $('#spark2').setAttribute('opacity', '0');
+    $('#mascotTitle').textContent = 'Я здесь 🌙';
+    $('#mascotText').textContent = 'Говори естественно и без напряжения.';
+  }
+}
+
+function pushSample(now) {
+  if (now - lastDisplaySample < SAMPLE_INTERVAL_MS) return;
+  lastDisplaySample = now;
+  pitchHistory.push({ t: now, v: smoothPitch });
+  if (pitchHistory.length > MAX_HISTORY_POINTS) pitchHistory.shift();
+}
+
+function audioLoop(now){
+  if (!running) return;
+  analyser.getFloatTimeDomainData(audioBuffer);
+  const dt = Math.min(0.12, Math.max(0, (now - session.lastTick) / 1000));
+  session.lastTick = now;
+  session.elapsed += dt;
+  const detected = detectPitch(audioBuffer, audioCtx.sampleRate);
+  if (detected) {
+    const hz = detected.hz;
+    if (smoothPitch == null) smoothPitch = hz;
+    else {
+      const delta = hz - smoothPitch;
+      const alpha = Math.abs(delta) > 45 ? 0.09 : 0.18;
+      smoothPitch += alpha * delta;
+    }
+    lastValidAt = now;
+    session.validDuration += dt;
+    session.allPitches.push(smoothPitch);
+    const inTarget = smoothPitch >= currentMode().low && smoothPitch <= currentMode().high;
+    if (inTarget) session.inTarget += dt;
+    $('#hzBadge').textContent = `${Math.round(smoothPitch)} Hz`;
+    $('#hzBadge').style.color = inTarget ? 'var(--green)' : 'var(--text)';
+    $('#pitchQuality').textContent = inTarget ? '· в цели' : '· вне цели';
+    updateMascot(inTarget ? 'happy' : (smoothPitch < currentMode().low ? 'low' : 'high'));
+  } else {
+    if (now - lastValidAt > 500) {
+      smoothPitch = null;
+      $('#hzBadge').textContent = '— Hz';
+      $('#hzBadge').style.color = 'var(--text)';
+      $('#pitchQuality').textContent = '· ожидание';
+      updateMascot('neutral');
+    }
+  }
+  pushSample(now);
+  $('#elapsedValue').textContent = fmtTime(session.elapsed);
+  $('#inTargetValue').textContent = fmtTime(session.inTarget);
+  if (now - lastFrameAt > 30) { drawGraph(); lastFrameAt = now; }
+  rafId = requestAnimationFrame(audioLoop);
+}
+
+async function startMic(){
+  if (running) return;
+  if (!navigator.mediaDevices?.getUserMedia) { showToast('Нужен HTTPS или localhost'); return; }
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    await audioCtx.resume();
+    sourceNode = audioCtx.createMediaStreamSource(stream);
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 4096;
+    sourceNode.connect(analyser);
+    audioBuffer = new Float32Array(analyser.fftSize);
+    running = true;
+    session = { startedAt: Date.now(), elapsed: 0, inTarget: 0, mode: activeMode, lastTick: performance.now(), allPitches: [] };
+    smoothPitch = null;
+    lastValidAt = 0;
+    lastFrameAt = performance.now();
+    lastDisplaySample = performance.now();
+    pitchHistory = [];
+    $('#micBtn').textContent = 'Ⅱ Остановить';
+    $('#finishBtn').style.display = 'flex';
+    $('#finishBtn').disabled = false;
+    $('#statusPill').textContent = '● Слушаю';
+    $('#statusPill').classList.add('green');
+    updateMascot('neutral');
+    rafId = requestAnimationFrame(audioLoop);
+  } catch (err) {
+    showToast('Нет доступа к микрофону.');
+    stopTracks();
+  }
+}
+
+function stopMic(showResult = true){
+  if (!running || !session) return;
+  running = false;
+  cancelAnimationFrame(rafId);
+  stopTracks();
+  $('#micBtn').textContent = '🎙️ Начать тренировку';
+  $('#finishBtn').style.display = 'none';
+  $('#finishBtn').disabled = true;
+  $('#statusPill').textContent = '● Готово';
+  $('#statusPill').classList.remove('green');
+  const avg = session.allPitches.length ? session.allPitches.reduce((a, b) => a + b, 0) / session.allPitches.length : null;
+  pendingSession = {
+    date: new Date().toISOString(),
+    mode: session.mode,
+    duration: Math.round(session.elapsed),
+    inTarget: Math.round(session.inTarget),
+    averagePitch: avg == null ? null : Math.round(avg)
+  };
+  session = null;
+  updateMascot('neutral');
+  drawGraph();
+  if (showResult && pendingSession.duration >= 2) {
+    $('#resultTarget').textContent = fmtShort(pendingSession.inTarget);
+    $('#resultAverage').textContent = pendingSession.averagePitch ?? '—';
+    openModal('resultModal');
+  } else pendingSession = null;
+}
+
+$('#micBtn').addEventListener('click', () => running ? stopMic(true) : startMic());
+$('#finishBtn').addEventListener('click', () => stopMic(true));
+
+$('#saveSessionBtn').addEventListener('click', async () => {
+  if (!pendingSession) return;
+  try {
+    await addDoc(collection(db, 'users', currentUser.uid, 'sessions'), { ...pendingSession, createdAt: serverTimestamp() });
+    const today = new Date().toISOString().split('T')[0];
+    const last = userData.lastPracticeDate;
+    let newStreak = userData.streak || 0;
+    if (last !== today) {
+      const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+      if (last === yesterday) newStreak++;
+      else newStreak = 1;
+      await updateDoc(doc(db, 'users', currentUser.uid), { streak: newStreak, lastPracticeDate: today });
+      userData.streak = newStreak;
+      userData.lastPracticeDate = today;
+    }
+    closeModal('resultModal');
+    pendingSession = null;
+    showToast('Сессия сохранена!');
+  } catch (e) {
+    showToast('Ошибка: ' + e.message);
+  }
+});
+$('#discardSessionBtn').addEventListener('click', () => { closeModal('resultModal'); pendingSession = null; });
+
+function fmtTime(s){s=Math.max(0,Math.floor(s||0));return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`}
+function fmtShort(s){s=Math.max(0,Math.round(s||0));return s<60?`${s} сек`:`${Math.floor(s/60)} мин`}
+
+function renderStats(sessions) {
+  const streak = userData.streak || 0;
+  $('#streakValue').textContent = streak;
+  $('#streakProgress').style.width = `${Math.min(100, (streak % 7) / 7 * 100)}%`;
+  $('#streakHint').textContent = streak ? `${streak} дней подряд` : 'Начни практику';
+  const totalTarget = sessions.reduce((a, s) => a + (s.inTarget || 0), 0);
+  $('#totalTarget').textContent = Math.round(totalTarget / 60);
+  $('#totalSessions').textContent = `${sessions.length} сессий`;
+}
+
+function renderRecent(sessions) {
+  const host = $('#recentSessions');
+  if (!sessions.length) { host.innerHTML = '<div class="card empty">Пока нет сессий.</div>'; return; }
+  host.innerHTML = sessions.slice(0, 8).map(s => `
+    <article class="card session-item">
+      <div class="session-symbol">${MODES[s.mode]?.icon || '〰'}</div>
+      <div class="session-details">
+        <strong>${MODES[s.mode]?.label || 'Тренировка'}</strong>
+        <span>${new Date(s.date).toLocaleDateString()} · ${fmtTime(s.duration)}</span>
+      </div>
+      <div class="session-score">${fmtShort(s.inTarget)}</div>
+    </article>
+  `).join('');
+}
+
+$('#settingsOpen').addEventListener('click', () => {
+  $('#avatarPicker').classList.remove('open');
+  openModal('settingsModal');
+});
+
+$('#settingsAvatar').addEventListener('click', () => {
+  $('#avatarPicker').classList.toggle('open');
+});
+
+function shatterEmoji(el) {
+  const emoji = el.textContent.trim();
+  if (!emoji) return;
+  const rect = el.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  const count = 18;
+  const baseSize = Math.min(rect.width, rect.height);
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('span');
+    p.textContent = emoji;
+    p.style.cssText = `position:fixed;left:${cx}px;top:${cy}px;font-size:${baseSize * 0.38}px;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);user-select:none;will-change:transform,opacity,filter;`;
+    document.body.appendChild(p);
+    const angle = (Math.PI * 2 * i / count) + (Math.random() - 0.5) * 0.6;
+    const dist = 40 + Math.random() * 55;
+    const dx = Math.cos(angle) * dist;
+    const dy = Math.sin(angle) * dist;
+    const rot = (Math.random() - 0.5) * 320;
+    const dur = 520 + Math.random() * 380;
+    p.animate([
+      { transform: 'translate(-50%,-50%) scale(1) rotate(0deg)', opacity: 1, filter: 'blur(0px)' },
+      { transform: `translate(calc(-50% + ${dx * 0.4}px), calc(-50% + ${dy * 0.4}px)) scale(0.85) rotate(${rot * 0.4}deg)`, opacity: 0.85, filter: 'blur(0.5px)', offset: 0.35 },
+      { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.15) rotate(${rot}deg)`, opacity: 0, filter: 'blur(2px)' }
+    ], { duration: dur, easing: 'cubic-bezier(0.22, 0.61, 0.36, 1)' }).onfinish = () => p.remove();
+  }
+}
+
+$('#settingsAvatarGrid').addEventListener('click', async (e) => {
+  const btn = e.target.closest('.avatar-opt');
+  if (!btn || !currentUser) return;
+  const newAvatar = btn.dataset.val;
+  const oldAvatar = userData.profile.avatar || '🦊';
+  if (newAvatar === oldAvatar) {
+    $('#avatarPicker').classList.remove('open');
+    return;
+  }
+  shatterEmoji($('#settingsAvatarText'));
+  $('#settingsAvatarText').style.opacity = '0';
+  $('#avatarPicker').classList.remove('open');
+
+  try {
+    await updateDoc(doc(db, 'users', currentUser.uid), { 'profile.avatar': newAvatar });
+    userData.profile.avatar = newAvatar;
+    $$('#settingsAvatarGrid .avatar-opt').forEach(b => b.classList.toggle('selected', b.dataset.val === newAvatar));
+
+    setTimeout(() => {
+      $('#settingsAvatarText').textContent = newAvatar;
+      $('#settingsAvatarText').style.opacity = '1';
+      $('#settingsAvatar').classList.remove('pop-in');
+      void $('#settingsAvatar').offsetWidth;
+      $('#settingsAvatar').classList.add('pop-in');
+      $('#mainAvatarEmoji').textContent = newAvatar;
+      showToast('Аватар обновлён');
+    }, 200);
+  } catch (err) {
+    $('#settingsAvatarText').textContent = oldAvatar;
+    $('#settingsAvatarText').style.opacity = '1';
+    showToast('Ошибка: ' + err.message);
+  }
+});
+
+$('#settingsNickname').addEventListener('change', async () => {
+  if (!currentUser || !userData) return;
+  const newName = $('#settingsNickname').value.trim();
+  if (!newName) { $('#settingsNickname').value = userData.profile.nickname; return; }
+  if (newName === userData.profile.nickname) return;
+  try {
+    await updateDoc(doc(db, 'users', currentUser.uid), { 'profile.nickname': newName });
+    userData.profile.nickname = newName;
+    $('#headerSubtitle').textContent = `Рада видеть тебя, ${newName}`;
+    showToast('Имя обновлено');
+  } catch (err) {
+    showToast('Ошибка: ' + err.message);
+    $('#settingsNickname').value = userData.profile.nickname;
+  }
+});
+
+$('#logoutBtn').addEventListener('click', () => { signOut(auth); closeModal('settingsModal'); });
+
+$('#openFeedbackBtn').addEventListener('click', () => { closeModal('settingsModal'); openModal('feedbackModal'); });
+$('#feedbackForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const type = $('#fbType').value;
+  const text = $('#fbText').value.trim();
+  if (!text) return;
+  try {
+    await addDoc(collection(db, 'feedback'), { uid: currentUser.uid, email: userData.email, type, text, createdAt: serverTimestamp() });
+    $('#fbText').value = '';
+    closeModal('feedbackModal');
+    showToast('Спасибо за отзыв!');
+  } catch (e) {
+    showToast('Ошибка отправки');
+  }
+});
+
+$('#openSupportBtn').addEventListener('click', () => {
+  closeModal('settingsModal');
+  openModal('supportModal');
+  loadSupportChat();
+});
+function loadSupportChat() {
+  if (unsubscribeChat) unsubscribeChat();
+  const q = query(collection(db, 'support', currentUser.uid, 'messages'), orderBy('createdAt', 'asc'));
+  unsubscribeChat = onSnapshot(q, (snap) => {
+    const chat = $('#chatMessages');
+    chat.innerHTML = '';
+    snap.forEach(doc => {
+      const msg = doc.data();
+      const div = document.createElement('div');
+      div.className = `chat-bubble ${msg.from}`;
+      div.textContent = msg.text;
+      chat.appendChild(div);
+    });
+    chat.scrollTop = chat.scrollHeight;
+  });
+}
+$('#chatSendBtn').addEventListener('click', async () => {
+  const text = $('#chatInput').value.trim();
+  if (!text) return;
+  $('#chatInput').value = '';
+  await addDoc(collection(db, 'support', currentUser.uid, 'messages'), { from: 'user', text, createdAt: serverTimestamp() });
+});
+$('#chatInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') $('#chatSendBtn').click(); });
+
+$('#linkEmailBtn').addEventListener('click', () => { closeModal('settingsModal'); openModal('linkEmailModal'); });
+$('#confirmLinkEmailBtn').addEventListener('click', async () => {
+  const email = $('#linkEmailInput').value.trim();
+  const pass = $('#linkPassInput').value;
+  if (!email || pass.length < 6) return showToast('Введите email и пароль (мин. 6 символов)');
+  try {
+    const credential = EmailAuthProvider.credential(email, pass);
+    await linkWithCredential(currentUser, credential);
+    await updateDoc(doc(db, 'users', currentUser.uid), { email });
+    userData.email = email;
+    $('#settingsEmail').textContent = email;
+    showToast('Email успешно привязан!');
+    closeModal('linkEmailModal');
+  } catch (e) {
+    showToast('Ошибка: ' + e.message);
+  }
+});
+
+function openDeleteConfirm() {
+  openModal('deleteAccountModal');
+  let remaining = 10;
+  const btn = $('#confirmDeleteBtn');
+  btn.disabled = true;
+  btn.textContent = `Удалить (${remaining})`;
+  clearInterval(deleteTimer);
+  deleteTimer = setInterval(() => {
+    remaining--;
+    if (remaining <= 0) {
+      clearInterval(deleteTimer);
+      deleteTimer = null;
+      btn.disabled = false;
+      btn.textContent = 'Удалить навсегда';
+    } else btn.textContent = `Удалить (${remaining})`;
+  }, 1000);
+}
+
+function cancelDelete() {
+  if (deleteTimer) { clearInterval(deleteTimer); deleteTimer = null; }
+  closeModal('deleteAccountModal');
+  const btn = $('#confirmDeleteBtn');
+  btn.disabled = true;
+  btn.textContent = 'Удалить (10)';
+}
+
+$('#deleteAccountBtn').addEventListener('click', () => {
+  closeModal('settingsModal');
+  openDeleteConfirm();
+});
+
+$('#cancelDeleteBtn').addEventListener('click', cancelDelete);
+$$('[data-close-delete]').forEach(b => b.addEventListener('click', cancelDelete));
+
+$('#confirmDeleteBtn').addEventListener('click', async () => {
+  const btn = $('#confirmDeleteBtn');
+  if (btn.disabled) return;
+  btn.disabled = true;
+  btn.textContent = 'Удаление...';
+  try {
+    const uid = currentUser.uid;
+    const username = userData?.profile?.username;
+
+    const sessionsSnap = await getDocs(collection(db, 'users', uid, 'sessions'));
+    for (const d of sessionsSnap.docs) await deleteDoc(d.ref);
+
+    const chatSnap = await getDocs(collection(db, 'support', uid, 'messages'));
+    for (const d of chatSnap.docs) await deleteDoc(d.ref);
+
+    const fbQuery = query(collection(db, 'feedback'), where('uid', '==', uid));
+    const fbSnap = await getDocs(fbQuery);
+    for (const d of fbSnap.docs) await deleteDoc(d.ref);
+
+    await deleteDoc(doc(db, 'users', uid));
+    if (username) await deleteDoc(doc(db, 'usernames', username));
+    await deleteUser(currentUser);
+
+    cancelDelete();
+    showToast('Аккаунт и все данные удалены.');
+    setTimeout(() => window.location.reload(), 1500);
+  } catch (e) {
+    console.error('Delete error:', e);
+    if (e.code === 'auth/requires-recent-login') {
+      showToast('Требуется повторный вход. Выйдите и войдите заново, затем повторите удаление.');
+    } else showToast('Ошибка удаления: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = 'Удалить навсегда';
+  }
+});
+
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+</script>
+</body>
+</html>
