@@ -1,0 +1,2707 @@
+<!doctype html>
+<html lang="ru" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f4f4f5">
+<meta name="description" content="Отклик — приватный тренажёр голоса.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Отклик">
+<title>Отклик — пространство твоего голоса</title>
+<link rel="manifest" href='data:application/manifest+json,{"name":"Отклик","short_name":"Отклик","start_url":"./","display":"standalone","background_color":"%23f4f4f5","theme_color":"%238b5cf6","icons":[{"src":"data:image/svg%2Bxml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 192 192%27%3E%3Crect width=%27192%27 height=%27192%27 rx=%2748%27 fill=%27%238b5cf6%27/%3E%3Ctext x=%2796%27 y=%27128%27 font-size=%2796%27 text-anchor=%27middle%27 fill=%27white%27%3E%E2%9C%A6%3C/text%3E%3C/svg%3E","sizes":"192x192","type":"image/svg+xml"}]}'>
+<script>
+(function(){
+  try {
+    var t = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', t);
+    document.documentElement.style.background = t === 'dark' ? '#09090b' : '#f4f4f5';
+  } catch(e){}
+})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
+:root {
+  color-scheme: light;
+  --bg: #f4f4f5;
+  --bg-soft: #FAF7FB;
+  --surface: #ffffff;
+  --surface2: #f8f8fa;
+  --text: #18181b;
+  --muted: #71717a;
+  --border: #e4e4e7;
+  --purple: #8b5cf6;
+  --pink: #d946ef;
+  --green: #10b981;
+  --red: #ef4444;
+  --blue: #4d6bfe;
+  --gradient: linear-gradient(135deg, var(--purple), var(--pink));
+  --shadow: 0 8px 30px rgba(0,0,0,.06);
+  --r: 24px;
+  --nav-bg: rgba(255,255,255,.85);
+  --logo-shine: #6d28d9;
+}
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #09090b;
+  --bg-soft: #0f0f13;
+  --surface: #18181b;
+  --surface2: #1f1f23;
+  --text: #f4f4f5;
+  --muted: #a1a1aa;
+  --border: #27272a;
+  --shadow: 0 8px 30px rgba(0,0,0,.5);
+  --nav-bg: rgba(24,24,27,.85);
+  --logo-shine: #a78bfa;
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;min-height:100vh;background-color:var(--bg);color:var(--text);font-family:Manrope,system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+button,input,textarea,select{font:inherit}button{cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--purple);outline-offset:3px}
+
+body.theme-anim,
+body.theme-anim *,
+body.theme-anim *:before,
+body.theme-anim *:after{
+  transition: background-color .3s ease, color .3s ease, border-color .3s ease, box-shadow .3s ease, fill .3s ease, stroke .3s ease !important;
+}
+
+body:before,body:after{content:"";position:fixed;width:360px;height:360px;filter:blur(100px);opacity:.15;z-index:-1;pointer-events:none;border-radius:50%}
+body:before{top:-180px;left:-140px;background:var(--purple)}
+body:after{right:-160px;bottom:-180px;background:var(--pink)}
+
+.app{width:100%;margin:0;padding:calc(20px + env(safe-area-inset-top)) 18px calc(108px + env(safe-area-inset-bottom));display:none;}
+.app.ready{display:block;}
+.app-inner{max-width:1140px;margin:0 auto;width:100%;}
+
+@media (min-width:720px){.app{padding-left:28px;padding-right:28px;}}
+@media (min-width:1100px){.app{padding-left:40px;padding-right:40px;}}
+
+/* ============ AUTH ============ */
+.auth-screen{position:fixed;inset:0;background:var(--bg);z-index:1000;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:20px;text-align:center;transition:opacity .35s ease;}
+.auth-screen.hidden{opacity:0;pointer-events:none;}
+.auth-logo{font-size:48px;margin-bottom:20px;filter:drop-shadow(0 0 20px rgba(139,92,246,0.5));animation:authFadeUp .8s cubic-bezier(0.2, 0.8, 0.2, 1) .05s both;}
+.auth-title{font-size:28px;font-weight:800;letter-spacing:-1px;margin-bottom:10px;animation:authFadeUp .9s cubic-bezier(0.2, 0.8, 0.2, 1) .3s both;color:var(--text);}
+.auth-desc{font-size:14px;color:var(--muted);line-height:1.6;max-width:300px;margin-bottom:40px;animation:authFadeUp .9s cubic-bezier(0.2, 0.8, 0.2, 1) .8s both;}
+.btn-google{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;max-width:320px;padding:16px;border-radius:16px;background:#fff;color:#000;font-weight:800;font-size:15px;border:1px solid var(--border);transition:transform .15s ease, filter .25s ease, box-shadow .25s ease;box-shadow:var(--shadow);animation:authBtnIn 1s cubic-bezier(0.2, 0.8, 0.2, 1) 1.35s both;}
+.btn-google:hover{filter:brightness(0.9);box-shadow:0 4px 16px rgba(0,0,0,.12);}
+.btn-google:active{transform:translateY(3px) scale(0.97);box-shadow:inset 0 2px 6px rgba(0,0,0,.18);filter:brightness(0.86);transition:transform .05s ease, box-shadow .05s ease;}
+
+@keyframes authFadeUp { from{opacity:0;transform:translateY(24px);filter:blur(8px);} to{opacity:1;transform:translateY(0);filter:blur(0);} }
+@keyframes authBtnIn { 0%{opacity:0;transform:translateY(24px) scale(0.9);} 60%{opacity:1;transform:translateY(-4px) scale(1.02);} 100%{opacity:1;transform:translateY(0) scale(1);} }
+
+/* ============ SPLASH / PIN ============ */
+.splash-screen{position:fixed;inset:0;background:var(--bg);z-index:1050;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:24px;text-align:center;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .4s ease, visibility 0s .4s;}
+.splash-screen.show{opacity:1;visibility:visible;pointer-events:auto;transition:opacity .35s ease, visibility 0s;}
+.splash-screen.fade-out{opacity:0;visibility:hidden;pointer-events:none;transition:opacity .5s ease, visibility 0s .5s;}
+.splash-logo{font-size:56px;margin-bottom:18px;filter:drop-shadow(0 0 24px rgba(139,92,246,0.55));animation:splashFadeUp .8s cubic-bezier(0.2, 0.8, 0.2, 1) both;}
+.splash-title{font-size:34px;font-weight:800;letter-spacing:-1.2px;margin-bottom:12px;animation:splashFadeUp .9s cubic-bezier(0.2, 0.8, 0.2, 1) .15s both;color:var(--text);}
+.splash-desc{font-size:14.5px;color:var(--muted);line-height:1.65;max-width:320px;animation:splashFadeUp .9s cubic-bezier(0.2, 0.8, 0.2, 1) .35s both;font-weight:500;}
+.splash-pin{width:100%;max-width:320px;margin-top:32px;opacity:0;transform:translateY(12px);transition:opacity .5s ease .2s, transform .5s cubic-bezier(0.2, 0.8, 0.2, 1) .2s;}
+.splash-pin.revealed{opacity:1;transform:translateY(0);}
+.splash-pin-label{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:14px;letter-spacing:.02em;}
+.pin-boxes{display:flex;justify-content:center;gap:10px;margin-bottom:16px;}
+.pin-box{width:52px;height:60px;text-align:center;font-size:26px;font-weight:800;background:var(--surface);border:2px solid var(--border);border-radius:14px;color:var(--text);outline:none;transition:border-color .2s ease, background-color .25s ease, transform .15s ease, box-shadow .25s ease;padding:0;font-family:inherit;-webkit-text-security:disc;text-security:disc;}
+.pin-box:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(139,92,246,.15);}
+.pin-box.filled{background:var(--surface2);border-color:var(--purple);}
+.pin-box.correct{border-color:var(--green);background:rgba(16,185,129,.15);color:var(--green);}
+.pin-box.error{border-color:var(--red);background:rgba(239,68,68,.1);animation:pinShake .35s ease;}
+@keyframes pinShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+.splash-pin-error{color:var(--red);font-size:12px;font-weight:700;min-height:18px;margin-bottom:10px;opacity:0;transition:opacity .2s ease;}
+.splash-pin-error.show{opacity:1;}
+.splash-pin-btn{width:100%;min-height:52px;border-radius:14px;border:none;background:var(--gradient);color:#fff;font-weight:800;font-size:14px;font-family:inherit;cursor:pointer;box-shadow:0 8px 22px rgba(139,92,246,.3);transition:transform .15s ease, filter .2s ease;}
+.splash-pin-btn:hover{filter:brightness(.96);}
+.splash-pin-btn:active{transform:scale(.98);}
+.splash-privacy{margin-top:24px;font-size:11px;color:var(--muted);animation:splashFadeUp .9s cubic-bezier(0.2, 0.8, 0.2, 1) .55s both;}
+@keyframes splashFadeUp{from{opacity:0;transform:translateY(18px);filter:blur(6px);}to{opacity:1;transform:translateY(0);filter:blur(0);}}
+
+/* ============ MODAL ============ */
+.modal{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.4);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .25s ease, backdrop-filter .35s ease}
+.modal.open{opacity:1;pointer-events:auto}
+.modal-panel{width:min(100%,600px);max-height:90dvh;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:28px;padding:30px 24px;transform:translateY(20px) scale(0.95);transition:transform .3s cubic-bezier(0.2, 0.8, 0.2, 1), background-color .3s ease, border-color .3s ease; box-shadow:var(--shadow); position:relative;}
+.modal.open .modal-panel{transform:translateY(0) scale(1);}
+.modal h2{font-size:21px;letter-spacing:-.04em;margin:0 0 8px; font-weight:800;}
+.modal p{font-size:13px;line-height:1.6;color:var(--muted);margin:0 0 20px}
+
+.modal-controls{position:absolute;top:16px;right:16px;display:flex;gap:8px;z-index:2}
+.ctrl-btn{width:36px;height:36px;border-radius:50%;background:var(--surface2);border:1.5px solid var(--border);color:var(--text);display:grid;place-items:center;cursor:pointer;font-size:16px;padding:0;line-height:1;transition:background-color .25s ease, transform .15s ease, border-color .25s ease;}
+.ctrl-btn:hover{background:var(--border)}
+.ctrl-btn:active{transform:scale(0.9)}
+#settingsModal .modal-panel{padding-top:68px}
+
+.onb-step{display:none; opacity:0; transform:translateX(30px); transition:opacity .35s cubic-bezier(0.2,0.8,0.2,1), transform .35s cubic-bezier(0.2,0.8,0.2,1);}
+.onb-step.active{display:block; opacity:1; transform:translateX(0);}
+.onb-step.exit{display:block; opacity:0; transform:translateX(-30px); position:absolute; pointer-events:none; left:24px; right:24px;}
+.onb-options{display:grid;gap:10px;margin-bottom:24px;}
+.onb-option{padding:16px;border:1.5px solid var(--border);border-radius:16px;background:var(--surface2);font-size:14px;font-weight:600;color:var(--text);text-align:left;transition:all .25s ease;cursor:pointer;font-family:inherit;}
+.onb-option:hover{border-color:var(--purple);}
+.onb-option.selected{border-color:var(--purple);background:rgba(139,92,246,0.1);box-shadow:0 0 0 2px rgba(139,92,246,0.2);}
+.onb-step.active .onb-option{animation:optIn .4s cubic-bezier(0.2,0.8,0.2,1) both;}
+.onb-step.active .onb-option:nth-child(1){animation-delay:.05s}
+.onb-step.active .onb-option:nth-child(2){animation-delay:.1s}
+.onb-step.active .onb-option:nth-child(3){animation-delay:.15s}
+.onb-step.active .onb-option:nth-child(4){animation-delay:.2s}
+.onb-step.active .onb-option:nth-child(5){animation-delay:.25s}
+@keyframes optIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+.avatar-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px;}
+.avatar-opt{width:100%;aspect-ratio:1;font-size:24px;display:flex;align-items:center;justify-content:center;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;cursor:pointer;transition:all .2s ease;font-family:inherit;}
+.avatar-opt.selected{border-color:var(--purple);background:rgba(139,92,246,0.2);transform:scale(1.05);}
+
+.field-label{display:block;color:var(--muted);font-size:12px;font-weight:800;margin:0 0 8px}
+.input,.textarea,.select{width:100%;background:var(--surface2);color:var(--text);border:1.5px solid var(--border);border-radius:14px;padding:14px;font-size:14px;transition:border-color .2s;font-family:inherit;}
+.input:focus,.textarea:focus,.select:focus{border-color:var(--purple);outline:none;}
+.input-wrapper{position:relative; display:flex; align-items:center;}
+.input-wrapper .at-symbol{position:absolute; left:14px; color:var(--muted); font-weight:bold;}
+.input-wrapper input{padding-left:32px;}
+
+.profile-header{display:flex;align-items:center;gap:16px;margin-bottom:24px;}
+.profile-avatar{width:64px;height:64px;border-radius:20px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:32px;border:1.5px solid var(--border);cursor:pointer;padding:0;font-family:inherit;flex:none;transition:border-color .25s ease, background-color .25s ease, transform .15s ease;}
+.profile-avatar:hover{border-color:var(--purple)}
+.profile-avatar:active{transform:scale(0.96)}
+.profile-avatar .avatar-text{display:block;transition:opacity .18s ease;}
+.profile-avatar.pop-in{animation:avatarPop .45s cubic-bezier(0.2, 0.8, 0.2, 1);}
+@keyframes avatarPop { 0%{transform:scale(0.6);} 55%{transform:scale(1.08);} 100%{transform:scale(1);} }
+.profile-info{flex:1;min-width:0;}
+.profile-info p{margin:4px 0 0;color:var(--muted);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.profile-name-input{font-family:inherit;font-size:18px;font-weight:700;color:var(--text);background:transparent;border:1px solid transparent;border-radius:8px;padding:4px 8px;margin:-4px -8px;width:calc(100% + 16px);transition:border-color .2s, background-color .2s;}
+.profile-name-input:hover{background:var(--surface2)}
+.profile-name-input:focus{background:var(--surface2);border-color:var(--purple);outline:none;}
+
+.avatar-picker{display:grid;grid-template-rows:0fr;transition:grid-template-rows .55s cubic-bezier(0.4, 0, 0.2, 1);}
+.avatar-picker.open{grid-template-rows:1fr;}
+.avatar-picker-inner{overflow:hidden;min-height:0;padding:0;border-radius:16px;background-color:var(--surface2);opacity:0;transition:padding .4s cubic-bezier(0.4, 0, 0.2, 1), opacity .3s ease;}
+.avatar-picker.open .avatar-picker-inner{padding:12px;opacity:1;}
+.avatar-picker .avatar-grid{margin:0;}
+
+.settings-section{margin-bottom:22px;}
+.settings-section:last-child{margin-bottom:0;}
+.settings-label{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:12px;}
+.settings-hint{font-size:11px;line-height:1.6;color:var(--muted);margin:0 0 12px;display:block;}
+
+.no-select{user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;}
+
+/* Reminders */
+.reminder-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.reminder-row:last-child{border-bottom:0}
+.reminder-row .reminder-label{flex:1;font-weight:600;color:var(--text)}
+.reminder-row .reminder-label small{display:block;font-size:10.5px;color:var(--muted);font-weight:500;margin-top:2px}
+.reminder-input{width:52px;padding:7px 6px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);text-align:center;font-family:inherit;font-size:12.5px;font-weight:700;}
+.reminder-input:disabled{opacity:.45}
+.reminder-unit{font-size:11px;color:var(--muted);font-weight:700}
+
+.closer-btn{position:relative;padding:9px 16px;border-radius:14px;border:none;color:#fff;font-weight:800;font-size:12px;letter-spacing:.02em;cursor:pointer;background:linear-gradient(135deg,#8b5cf6,#d946ef,#ec4899,#f59e0b,#8b5cf6);background-size:300% 300%;animation:closerFlow 5s ease infinite;box-shadow:0 4px 18px rgba(139,92,246,.45);overflow:hidden;font-family:inherit;flex:none;transition:transform .18s ease;}
+.closer-btn::after{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.45),transparent);animation:closerShine 3.5s ease-in-out infinite;}
+.closer-btn:hover{transform:translateY(-1px) scale(1.03)}
+.closer-btn:active{transform:scale(.97)}
+@keyframes closerFlow{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+@keyframes closerShine{0%,100%{left:-100%}50%{left:100%}}
+
+.header-actions{display:flex;align-items:center;gap:10px;flex:none}
+
+#closerModal .modal-panel{position:relative;padding:32px 24px 26px;border:none;overflow:hidden;background:var(--surface);}
+#closerModal .modal-panel::before{content:'';position:absolute;inset:0;border-radius:28px;padding:1.5px;background:linear-gradient(135deg,#8b5cf6,#d946ef,#ec4899,#f59e0b,#8b5cf6);background-size:300% 300%;animation:closerFlow 5s ease infinite;-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;}
+#closerModal .closer-hero{text-align:center;margin-bottom:20px}
+#closerModal .closer-star{font-size:52px;line-height:1;margin-bottom:14px;display:inline-block;animation:closerStarSpin 4s ease-in-out infinite;filter:drop-shadow(0 0 22px rgba(217,70,239,.7));}
+@keyframes closerStarSpin{0%,100%{transform:scale(1) rotate(-6deg)}50%{transform:scale(1.12) rotate(6deg)}}
+#closerModal h2{font-size:24px;background:linear-gradient(135deg,var(--purple),var(--pink));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:12px;}
+#closerModal .closer-desc{font-size:13px;line-height:1.65;color:var(--muted);margin:0 auto 22px;max-width:460px}
+.closer-features{display:grid;gap:10px;margin-bottom:20px}
+.closer-feature{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:var(--surface2);border:1.5px solid var(--border);border-radius:14px;opacity:0;transform:translateY(10px);animation:closerFeatIn .5s cubic-bezier(.2,.8,.2,1) forwards;}
+#closerModal.open .closer-feature:nth-child(1){animation-delay:.15s}
+#closerModal.open .closer-feature:nth-child(2){animation-delay:.25s}
+#closerModal.open .closer-feature:nth-child(3){animation-delay:.35s}
+#closerModal.open .closer-feature:nth-child(4){animation-delay:.45s}
+@keyframes closerFeatIn{to{opacity:1;transform:translateY(0)}}
+.closer-feature-icon{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-size:19px;flex:none;background:linear-gradient(135deg,rgba(139,92,246,.15),rgba(217,70,239,.15));border:1px solid rgba(139,92,246,.25);}
+.closer-feature strong{display:block;font-size:13px;margin-bottom:3px;color:var(--text)}
+.closer-feature span{display:block;font-size:11.5px;color:var(--muted);line-height:1.45}
+.closer-cta{position:relative;width:100%;color:#fff;font-weight:800;background:linear-gradient(135deg,#8b5cf6,#d946ef,#ec4899);background-size:200% 200%;animation:closerFlow 4s ease infinite;box-shadow:0 10px 30px rgba(217,70,239,.4);border:none;border-radius:16px;min-height:52px;font-size:14px;letter-spacing:.02em;}
+.closer-note{font-size:11px;color:var(--muted);text-align:center;margin:12px 0 0;line-height:1.5}
+
+.chat-container{display:flex;flex-direction:column;height:300px;background:var(--surface2);border:1.5px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:16px;}
+.chat-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;}
+.chat-bubble{padding:10px 14px;border-radius:16px;font-size:13px;line-height:1.4;word-wrap:break-word;overflow-wrap:anywhere;}
+.chat-container .chat-bubble{max-width:80%;}
+.chat-container .chat-bubble.user{align-self:flex-end;background:var(--purple);color:#fff;border-bottom-right-radius:4px;}
+.chat-container .chat-bubble.owner{align-self:flex-start;background:var(--border);color:var(--text);border-bottom-left-radius:4px;}
+
+header{display:flex;justify-content:space-between;align-items:center;gap:16px;margin:0 auto 24px;max-width:1060px;width:100%;}
+.eyebrow{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.13em;font-weight:800}
+.greeting{font-size:25px;line-height:1.2;letter-spacing:-.04em;font-weight:800;margin-top:5px;background:linear-gradient(90deg,var(--text) 0%,var(--text) 40%,var(--logo-shine) 50%,var(--text) 60%,var(--text) 100%);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:logoShimmer 7s linear infinite;}
+@keyframes logoShimmer{0%,60%{background-position:200% 0;}100%{background-position:-200% 0;}}
+.subgreeting{font-size:13px;color:var(--muted);margin-top:7px}
+
+.avatar{position:relative;width:52px;height:52px;border-radius:17px;display:grid;place-items:center;font-weight:800;font-size:24px;color:white;border:none;cursor:pointer;padding:0;font-family:inherit;z-index:1;background:linear-gradient(135deg, #5BCEFA 0%, #F5A9B8 22%, #FFFFFF 42%, #F5A9B8 60%, #5BCEFA 82%, #F5A9B8 100%);background-size:400% 400%;animation: transFlag 10s ease-in-out infinite, avatarGlow 3.5s ease-in-out infinite;transition:transform .18s ease;}
+.avatar:hover{transform:scale(1.05);}
+.avatar:active{transform:scale(0.95);}
+.avatar .avatar-emoji{filter:drop-shadow(0 1px 2px rgba(0,0,0,0.28));}
+.avatar-unread-dot{position:absolute;top:-2px;right:-2px;width:12px;height:12px;border-radius:50%;background:#ef4444;border:2px solid var(--bg);display:none;animation:unreadPulse 1.5s ease-in-out infinite;z-index:2;}
+@keyframes transFlag { 0%,100%{background-position:0% 50%;} 50%{background-position:100% 50%;} }
+@keyframes avatarGlow {0%,100%{box-shadow:0 0 5px 1px rgba(91,206,250,.18), 0 0 10px 3px rgba(245,169,184,.08);}50%{box-shadow:0 0 8px 2px rgba(245,169,184,.22), 0 0 16px 5px rgba(91,206,250,.1);}}
+@keyframes unreadPulse {0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.6);}50%{box-shadow:0 0 0 5px rgba(239,68,68,0);}}
+
+.page{display:none}
+.page.active{display:block;animation:pageIn .3s cubic-bezier(0.2,0.8,0.2,1);}
+@keyframes pageIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+#page-home,#page-trainer,#page-programs,#page-community{max-width:1060px;margin:0 auto;display:none;flex-direction:column;gap:20px;}
+#page-home.active,#page-trainer.active,#page-programs.active,#page-community.active{display:flex;}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r);padding:17px;box-shadow:var(--shadow);transition:background-color .3s ease, border-color .3s ease}
+.stat-card{min-height:112px;position:relative;overflow:hidden;transition:background .6s ease, border-color .5s ease, box-shadow .5s ease}
+.stat-label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:800}
+.stat-number{font-size:29px;font-weight:800;letter-spacing:-.04em;margin-top:10px;line-height:1.1}
+.stat-number small{font-size:12px;color:var(--muted);letter-spacing:0;font-weight:600}
+
+.stat-icon{float:right;font-size:20px;display:inline-block;transform-origin:center bottom}
+.stat-icon.fire{transition:filter .4s ease}
+.stat-card.unlit .stat-icon.fire{filter:grayscale(1) brightness(.7);opacity:.7}
+.stat-card.lit .stat-icon.fire{filter:drop-shadow(0 0 8px rgba(251,146,60,.85)) drop-shadow(0 0 14px rgba(239,68,68,.5));animation:fireFlicker 1.9s ease-in-out infinite;}
+@keyframes fireFlicker{0%,100%{transform:scale(1) rotate(-4deg) translateY(0)}20%{transform:scale(1.08) rotate(4deg) translateY(-1px)}40%{transform:scale(1.03) rotate(-3deg) translateY(0)}60%{transform:scale(1.12) rotate(5deg) translateY(-2px)}80%{transform:scale(1.05) rotate(-2deg) translateY(0)}}
+
+.stat-card.unlit .progress-line span{background:var(--border)}
+.stat-card.lit .progress-line span{background:linear-gradient(90deg,#fbbf24,#f97316,#ef4444,#fbbf24);background-size:200% 100%;animation:fireFlow 3s ease infinite;}
+@keyframes fireFlow{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.stat-card.lit{background:linear-gradient(135deg,rgba(251,146,60,.10) 0%,rgba(239,68,68,.06) 100%);border-color:rgba(251,146,60,.42);box-shadow:0 8px 30px rgba(251,146,60,.14),0 0 0 1px rgba(251,146,60,.08) inset;}
+.stat-card.lit .stat-number{color:#ea580c}
+[data-theme="dark"] .stat-card.lit{background:linear-gradient(135deg,rgba(251,146,60,.18) 0%,rgba(239,68,68,.10) 100%);border-color:rgba(251,146,60,.55);}
+[data-theme="dark"] .stat-card.lit .stat-number{color:#fb923c}
+
+.section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:25px 2px 13px}
+.section-head h2{font-size:17px;letter-spacing:-.03em;margin:0}
+.section-head p{font-size:12px;color:var(--muted);margin:5px 0 0}
+
+.hero{padding:20px;position:relative;overflow:hidden}
+.hero-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;position:relative}
+.hero h2{font-size:19px;margin:0;letter-spacing:-.04em}
+.hero p{font-size:12px;color:var(--muted);line-height:1.6;margin:7px 0 0}
+
+.mic-status{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:99px;border:1.5px solid var(--border);background:var(--surface2);color:var(--muted);font-size:11px;font-weight:800;white-space:nowrap;transition:all .3s ease;flex:none;}
+.mic-status.on{border-color:rgba(16,185,129,.4);background:rgba(16,185,129,.1);color:var(--green);}
+.mic-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);transition:background-color .3s ease;flex:none;}
+.mic-status.on .mic-dot{background:var(--green);animation:micPulse 1.6s ease-in-out infinite;}
+@keyframes micPulse {0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.55);}50%{box-shadow:0 0 0 6px rgba(16,185,129,0);}}
+
+.mode-select{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:16px 0}
+.mode{border:1.5px solid var(--border);border-radius:14px;background:var(--surface2);color:var(--muted);padding:11px 4px;font-size:11px;font-weight:800;transition:all .3s cubic-bezier(.2,.8,.2,1);cursor:pointer;font-family:inherit;}
+.mode span{display:block;font-size:17px;margin-bottom:5px;transition:transform .3s ease;}
+.mode.selected{background:rgba(139,92,246,.1);border-color:var(--purple);color:var(--purple);box-shadow:inset 0 0 0 1px rgba(139,92,246,.2);}
+.mode.selected span{transform:scale(1.15);}
+
+/* ============ HRT WIDGET ============ */
+.hrt-widget{padding:16px;background:linear-gradient(135deg,rgba(139,92,246,.06),rgba(217,70,239,.04));border:1.5px solid rgba(139,92,246,.22);border-radius:18px;margin:16px 0 4px;transition:all .3s ease;}
+.hrt-header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px}
+.hrt-title{font-size:15px;font-weight:800;color:var(--text);letter-spacing:-.02em;}
+.hrt-title #hrtDaysNum{background:linear-gradient(135deg,var(--purple),var(--pink));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;font-size:22px;font-variant-numeric:tabular-nums;display:inline-block;min-width:24px;}
+.hrt-sub{font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:4px;font-weight:500;}
+.hrt-set-btn{background:var(--surface);border:1.5px solid var(--purple);color:var(--purple);font-size:11px;font-weight:800;padding:7px 12px;border-radius:10px;cursor:pointer;font-family:inherit;transition:all .2s ease;flex:none;}
+.hrt-set-btn:hover{background:rgba(139,92,246,.08)}
+.hrt-set-btn:active{transform:scale(.96)}
+.hrt-taken-row{display:none;align-items:center;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);cursor:pointer;user-select:none;}
+.hrt-taken-row:hover .hrt-taken-check{border-color:var(--purple)}
+.hrt-taken-check{width:22px;height:22px;border-radius:7px;border:2px solid var(--border);background:var(--surface);display:grid;place-items:center;flex:none;transition:all .2s ease;position:relative;}
+.hrt-taken-check.checked{background:var(--gradient);border-color:transparent;}
+.hrt-taken-check.checked::after{content:'✓';color:#fff;font-size:13px;font-weight:800;line-height:1;}
+.hrt-taken-label{display:flex;align-items:center;gap:10px;width:100%;cursor:pointer;font-size:12.5px;font-weight:700;color:var(--text);}
+
+/* ============ FTM VOICE PROGRESS ============ */
+.voice-progress-widget{margin:16px 0 4px;padding:16px;background:var(--surface2);border:1.5px solid var(--border);border-radius:18px;display:none;}
+.voice-progress-widget.visible{display:block;animation:pageIn .4s ease;}
+.vp-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap;}
+.vp-title{font-size:13.5px;font-weight:800;color:var(--text);letter-spacing:-.02em;}
+.vp-export-btn{background:var(--surface);border:1.5px solid var(--border);color:var(--text);font-size:11px;font-weight:800;padding:6px 11px;border-radius:10px;cursor:pointer;font-family:inherit;transition:all .2s ease;flex:none;}
+.vp-export-btn:hover{border-color:var(--purple);color:var(--purple)}
+.vp-export-btn:active{transform:scale(.96)}
+.vp-chart-wrap{height:180px;position:relative;background:var(--surface);border-radius:14px;overflow:hidden;border:1px solid var(--border);}
+.vp-chart-wrap canvas{width:100%;height:100%;display:block;}
+.vp-hint{font-size:11px;color:var(--muted);text-align:center;margin-top:8px;font-weight:600;line-height:1.5;}
+
+/* ============ PROGRAMS ============ */
+.programs-grid{display:grid;grid-template-columns:1fr;gap:12px;}
+@media (min-width:640px){.programs-grid{grid-template-columns:1fr 1fr;}}
+.program-card{position:relative;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r);padding:18px 16px 16px;cursor:pointer;transition:all .25s ease;font-family:inherit;text-align:left;overflow:hidden;}
+.program-card:hover{border-color:var(--purple);transform:translateY(-2px);box-shadow:var(--shadow);}
+.program-card:active{transform:scale(.99);}
+.program-card.premium{background:linear-gradient(135deg,rgba(139,92,246,.06),rgba(217,70,239,.04));}
+.program-card.premium::after{content:'👑';position:absolute;top:14px;right:14px;font-size:20px;filter:drop-shadow(0 2px 6px rgba(217,70,239,.4));}
+.program-icon{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;font-size:22px;background:var(--surface2);border:1.5px solid var(--border);margin-bottom:12px;}
+.program-card.premium .program-icon{background:linear-gradient(135deg,rgba(139,92,246,.15),rgba(217,70,239,.15));border-color:rgba(139,92,246,.3);}
+.program-title{font-size:14.5px;font-weight:800;color:var(--text);margin-bottom:4px;letter-spacing:-.02em;line-height:1.3;}
+.program-desc{font-size:11.5px;color:var(--muted);line-height:1.5;font-weight:500;}
+.program-meta{font-size:10.5px;color:var(--purple);font-weight:800;margin-top:10px;letter-spacing:.02em;text-transform:uppercase;}
+
+.free-program-day{padding:12px 14px;background:var(--surface2);border:1.5px solid var(--border);border-radius:14px;margin-bottom:8px;cursor:pointer;transition:all .2s ease;}
+.free-program-day:hover{border-color:var(--purple);}
+.free-program-day .fpd-title{font-size:13px;font-weight:800;color:var(--text);display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.free-program-day .fpd-title .fpd-chevron{font-size:11px;color:var(--muted);transition:transform .3s ease;}
+.free-program-day.open .fpd-title .fpd-chevron{transform:rotate(180deg);}
+.free-program-day .fpd-text{font-size:12px;color:var(--muted);line-height:1.65;max-height:0;overflow:hidden;transition:all .35s cubic-bezier(.4,0,.2,1);margin-top:0;}
+.free-program-day.open .fpd-text{max-height:220px;margin-top:8px;}
+
+.graph-controls{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:14px 0 8px;flex-wrap:wrap}
+.graph-badges{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.graph-badge{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:6px 10px;font-size:12px;font-weight:800;display:inline-flex;gap:5px;align-items:baseline;box-shadow:0 2px 10px rgba(0,0,0,.04);}
+.graph-badge small{font-size:10px;color:var(--muted);font-weight:600}
+.graph-badge .hz-num{font-variant-numeric:tabular-nums}
+.resonance-badge{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:6px 10px;font-size:11px;font-weight:800;display:inline-flex;gap:6px;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,.04);}
+.resonance-meter{width:36px;height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.resonance-fill{display:block;height:100%;width:0%;background:linear-gradient(90deg,#a78bfa,#f472b6);border-radius:3px;transition:width .15s ease}
+.resonance-value{font-variant-numeric:tabular-nums;color:var(--text);min-width:26px;text-align:right;font-size:11px}
+
+.graph-buttons{display:flex;gap:6px;align-items:center;flex:none}
+.gmode-dropdown{position:relative;display:inline-flex;}
+.gmode-toggle{width:34px;height:34px;padding:0;display:grid;place-items:center;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;color:var(--text);cursor:pointer;font-family:inherit;transition:all .2s ease;position:relative;}
+.gmode-toggle:hover{background:var(--border)}
+.gmode-toggle.open{border-color:var(--purple);color:var(--purple);background:rgba(139,92,246,.08)}
+.gmode-toggle.attention{animation:gmodeAttention 1.2s ease-in-out;}
+@keyframes gmodeAttention{0%,100%{border-color:var(--border);box-shadow:none;}30%,70%{border-color:var(--purple);box-shadow:0 0 0 4px rgba(139,92,246,.18);}}
+.gmode-toggle .gmode-chevron{position:absolute;bottom:1px;right:1px;transition:transform .3s ease;flex:none;opacity:.7;}
+.gmode-toggle.open .gmode-chevron{transform:rotate(180deg)}
+.gmode-panel{position:absolute;top:calc(100% + 6px);right:0;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:5px;display:flex;gap:4px;box-shadow:var(--shadow);z-index:15;opacity:0;pointer-events:none;transform:translateY(-6px) scale(.94);transform-origin:top right;transition:opacity .22s ease, transform .3s cubic-bezier(0.34,1.56,0.64,1);}
+.gmode-panel.open{opacity:1;pointer-events:auto;transform:translateY(0) scale(1);}
+.gmode{border:0;background:transparent;color:var(--muted);font-size:10px;font-weight:800;padding:6px 11px;border-radius:8px;cursor:pointer;transition:all .2s ease;font-family:inherit;white-space:nowrap;}
+.gmode:hover{color:var(--text);background:var(--surface2);}
+.gmode.active{background:var(--purple);color:#fff;}
+
+.graph-settings-btn{width:34px;height:34px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:16px;cursor:pointer;display:grid;place-items:center;transition:transform .3s ease, background-color .2s;font-family:inherit;padding:0;}
+.graph-settings-btn:hover{background:var(--border);}
+.graph-settings-btn.open{transform:rotate(45deg);color:var(--purple);border-color:var(--purple);}
+.graph-settings{display:grid;grid-template-rows:0fr;transition:grid-template-rows .45s cubic-bezier(.4,0,.2,1);}
+.graph-settings.open{grid-template-rows:1fr;}
+.graph-settings-inner{overflow:hidden;min-height:0;padding:0;border-radius:16px;background:var(--surface2);border:0 solid var(--border);opacity:0;transition:padding .4s cubic-bezier(.4,0,.2,1), opacity .3s ease, border-width .3s ease, margin .3s ease;}
+.graph-settings.open .graph-settings-inner{padding:14px;border-width:1.5px;opacity:1;margin-bottom:6px;}
+.gs-row{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
+.gs-row:last-child{margin-bottom:0;}
+.gs-label{font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;}
+.gs-row-inline{display:flex;justify-content:space-between;align-items:center;gap:12px;}
+.gs-reset-btn{padding:5px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--muted);font-size:10px;font-weight:800;cursor:pointer;font-family:inherit;transition:all .2s ease;}
+.gs-reset-btn:hover{border-color:var(--red);color:var(--red);}
+.zone-colors{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+.zone-color-item{display:flex;align-items:center;gap:8px;background:var(--surface);border:1.5px solid var(--border);border-radius:11px;padding:7px 9px;font-size:11px;font-weight:700;color:var(--text)}
+.zone-color-item input[type="color"]{width:24px;height:24px;padding:0;border:1.5px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;flex:none;-webkit-appearance:none;appearance:none;}
+.zone-color-item input[type="color"]::-webkit-color-swatch-wrapper{padding:0}
+.zone-color-item input[type="color"]::-webkit-color-swatch{border:0;border-radius:4px}
+.zone-color-item input[type="color"]::-moz-color-swatch{border:0;border-radius:4px}
+.zone-color-item span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.range-inputs{display:flex;align-items:center;gap:8px;}
+.range-inputs input[type="number"]{width:70px;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:8px 10px;font-size:13px;font-weight:700;text-align:center;color:var(--text);font-family:inherit;}
+.range-inputs input[type="number"]:focus{outline:none;border-color:var(--purple);}
+.range-inputs input[type="range"]{flex:1;accent-color:var(--purple);}
+.range-inputs span{color:var(--muted);font-weight:700;}
+.toggle{position:relative;width:40px;height:22px;display:inline-block;flex:none;}
+.toggle input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;cursor:pointer;inset:0;background:var(--border);border-radius:22px;transition:.3s;}
+.toggle-slider::before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.3s;box-shadow:0 1px 3px rgba(0,0,0,0.2);}
+.toggle input:checked + .toggle-slider{background:var(--purple);}
+.toggle input:checked + .toggle-slider::before{transform:translateX(18px);}
+
+.graph-wrap{height:290px;position:relative;background:var(--surface2);border:1.5px solid var(--border);border-radius:18px;overflow:hidden;transition:background-color .3s ease;}
+.graph-wrap canvas{width:100%;height:100%;display:block;transition:filter .35s ease;}
+.graph-wrap:not(.recording) canvas{filter:blur(10px);}
+.graph-wrap.recording canvas{filter:blur(0);}
+.graph-placeholder{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;pointer-events:none;color:var(--muted);transition:opacity .35s ease;background:radial-gradient(circle at 50% 45%, rgba(139,92,246,.12), transparent 65%);}
+.graph-placeholder.hidden{opacity:0}
+.graph-placeholder-icon{font-size:46px;margin-bottom:10px;filter:drop-shadow(0 4px 18px rgba(139,92,246,.4));animation:placeholderFloat 3.6s ease-in-out infinite;}
+@keyframes placeholderFloat{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-6px) rotate(3deg)}}
+.graph-placeholder-title{font-size:13px;font-weight:800;color:var(--text);margin-bottom:5px}
+.graph-placeholder-text{font-size:11.5px;font-weight:500;line-height:1.55;max-width:260px}
+.hz-scale{position:absolute;top:0;right:0;bottom:0;width:52px;pointer-events:none;}
+.hz-scale::before{content:'';position:absolute;inset:0;background:linear-gradient(to left, rgba(139,92,246,.09), transparent);opacity:0;transition:opacity .3s ease;pointer-events:none;}
+.hz-scale.hover::before{opacity:1;}
+.hz-label{position:absolute;right:8px;font-size:10px;font-weight:700;color:var(--muted);transform:translateY(-50%);pointer-events:none;transition:color .2s ease, font-size .2s ease, text-shadow .2s ease;text-shadow:0 0 3px var(--surface2), 0 0 6px var(--surface2), 0 0 3px var(--surface2);padding:1px 4px;user-select:none;letter-spacing:.02em;}
+.hz-label.bounce{animation:hzBounce .4s cubic-bezier(.34,1.56,.64,1);}
+@keyframes hzBounce{0%{transform:translateY(-50%) scale(1);color:var(--muted);}45%{transform:translateY(-50%) scale(1.32);color:var(--purple);font-weight:800;text-shadow:0 0 6px var(--surface2), 0 0 10px var(--surface2);}100%{transform:translateY(-50%) scale(1);color:var(--muted);}}
+.graph-legend{display:flex;justify-content:center;align-items:center;gap:12px;color:var(--muted);font-size:10px;padding:8px 2px 0;flex-wrap:wrap}
+.graph-legend b{color:var(--green);font-weight:700;font-size:11px}
+.zone-legend{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;padding:6px 0 0;font-size:10px;color:var(--muted);font-weight:700}
+.zone-legend-item{display:inline-flex;align-items:center;gap:5px}
+.zone-dot{width:10px;height:10px;border-radius:3px;display:inline-block;background:var(--border);border:1px solid var(--border)}
+.practice-card{padding:16px;background:var(--surface2);border:1.5px solid var(--border);border-radius:16px;margin:14px 0 0;transition:border-color .3s;}
+.practice-card:hover{border-color:rgba(139,92,246,.35)}
+.practice-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px}
+.practice-label{font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.practice-text{font-size:13.5px;line-height:1.7;color:var(--text);min-height:44px;max-height:280px;overflow-y:auto;cursor:text;padding:8px 10px;margin:-4px -10px -4px;border-radius:10px;outline:none;transition:background-color .15s ease, color .3s ease;word-wrap:break-word;overflow-wrap:anywhere;font-weight:500;scrollbar-width:thin;}
+.practice-text::-webkit-scrollbar{width:6px;}
+.practice-text::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+.practice-text:hover,.practice-text:focus{background:var(--surface)}
+.practice-hint{font-size:10px;color:var(--muted);margin-top:6px;text-align:right;}
+.practice-hint .practice-count{font-weight:800;color:var(--text)}
+.session-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0 0}
+.mini-stat{background:var(--surface2);border:1.5px solid var(--border);border-radius:14px;padding:10px;text-align:center}
+.mini-stat strong{display:block;font-size:17px;font-variant-numeric:tabular-nums}
+.mini-stat span{display:block;color:var(--muted);font-size:10px;margin-top:3px}
+.btn{border:0;border-radius:16px;min-height:50px;padding:13px 16px;display:flex;justify-content:center;align-items:center;gap:9px;font-weight:800;font-size:13px;font-family:inherit;cursor:pointer;transition:transform .16s ease, filter .3s ease, background-color .3s ease, color .3s ease, border-color .3s ease, box-shadow .3s ease;}
+.btn:active{transform:scale(.985)}
+.btn-primary{width:100%;color:white;background:var(--gradient);box-shadow:0 8px 25px rgba(139,92,246,.3)}
+.btn-primary:hover{filter:brightness(0.96)}
+.btn-secondary{background:var(--surface2);border:1.5px solid var(--border);color:var(--text)}
+.btn-secondary:hover{background:var(--border);filter:brightness(0.98)}
+.btn-danger{background:rgba(239,68,68,.1);border:1.5px solid rgba(239,68,68,.3);color:var(--red)}
+.btn-danger:hover{background:rgba(239,68,68,.15)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-delete{position:relative;width:100%;background-color:transparent;background-image:linear-gradient(var(--red), var(--red));background-repeat:no-repeat;background-position:left center;background-size:0% 100%;background-clip:padding-box;border:1.5px solid rgba(239,68,68,.35);color:var(--red);transition:background-size .8s cubic-bezier(.65,0,.35,1), color .2s ease, border-color .4s ease;}
+.btn-delete:hover{background-size:100% 100%;color:#fff;border-color:var(--red)}
+.btn-link-email{position:relative;width:100%;background-color:transparent;background-image:linear-gradient(var(--blue), var(--blue));background-repeat:no-repeat;background-position:left center;background-size:0% 100%;background-clip:padding-box;border:1.5px solid rgba(77,107,254,.35);color:var(--blue);transition:background-size .8s cubic-bezier(.65,0,.35,1), color .2s ease, border-color .4s ease;}
+.btn-link-email:hover{background-size:100% 100%;color:#fff;border-color:var(--blue)}
+.support-unread-dot{position:absolute;top:50%;right:14px;transform:translateY(-50%);width:10px;height:10px;border-radius:50%;background:#ef4444;display:none;animation:unreadPulse 1.5s ease-in-out infinite;}
+.notice{font-size:11px;line-height:1.6;color:var(--muted);display:flex;gap:8px;margin:13px 2px 0}
+.notice b{color:var(--text)}
+.progress-line{height:6px;background:var(--border);border-radius:99px;overflow:hidden;margin:11px 0 5px}
+.progress-line span{display:block;height:100%;width:0;background:var(--gradient);border-radius:inherit;transition:width .4s ease}
+.empty{text-align:center;padding:28px 18px;color:var(--muted);font-size:12px;line-height:1.7}
+.history-list{display:grid;gap:10px}
+.session-item{display:flex;align-items:center;gap:12px}
+.session-symbol{width:42px;height:42px;border-radius:14px;background:rgba(139,92,246,.1);display:grid;place-items:center;font-size:19px;flex:none; color:var(--purple);}
+.session-details{flex:1;min-width:0}
+.session-details strong{display:block;font-size:12px}
+.session-details span{display:block;color:var(--muted);font-size:10px;margin-top:4px}
+.session-score{text-align:right;font-weight:800;font-size:14px}
+.community-form{display:grid;gap:12px;}
+.community-form .textarea{min-height:80px;resize:vertical;line-height:1.5;font-family:inherit;}
+.community-form-footer{display:flex;justify-content:space-between;align-items:center;gap:12px;}
+.community-counter{font-size:11px;color:var(--muted);font-weight:700}
+.community-counter .over{color:var(--red)}
+.community-form-footer .btn{width:auto;min-width:140px;flex:none;}
+.community-list{display:grid;gap:10px;margin-top:4px;}
+.community-post{padding:14px 16px;background:var(--surface);border:1.5px solid var(--border);border-radius:18px;box-shadow:var(--shadow);animation:postIn .35s cubic-bezier(.2,.8,.2,1);}
+@keyframes postIn{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+.community-post-head{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.community-post-avatar{width:34px;height:34px;border-radius:10px;background:var(--surface2);display:grid;place-items:center;font-size:18px;flex:none;border:1.5px solid var(--border);}
+.community-post-meta{flex:1;min-width:0;}
+.community-post-meta strong{display:block;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.community-post-meta span{display:block;font-size:10px;color:var(--muted);margin-top:2px;}
+.community-post-delete{background:transparent;border:0;color:var(--muted);font-size:14px;cursor:pointer;padding:6px;border-radius:8px;line-height:1;font-family:inherit;transition:color .2s, background-color .2s;}
+.community-post-delete:hover{color:var(--red);background:rgba(239,68,68,.08)}
+.community-post-text{font-size:13.5px;line-height:1.6;white-space:pre-wrap;word-wrap:break-word;overflow-wrap:anywhere;}
+.bottom-nav{position:fixed;z-index:20;bottom:calc(10px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:min(calc(100% - 24px),480px);padding:8px;display:grid;grid-template-columns:repeat(4,1fr);gap:5px;background:var(--nav-bg);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1.5px solid var(--border);border-radius:22px;box-shadow:0 12px 45px rgba(0,0,0,.1);transition:background-color .3s ease, border-color .3s ease}
+.nav-item{border:0;background:transparent;color:var(--muted);border-radius:15px;padding:9px 2px;display:flex;flex-direction:column;align-items:center;gap:5px;font-size:9.5px;font-weight:800; cursor:pointer;transition:background-color .25s ease, color .25s ease;font-family:inherit;}
+.nav-item .nav-icon{font-size:18px;line-height:1}
+.nav-item.active{color:var(--purple);background:rgba(139,92,246,.1)}
+.scroll-top{position:fixed;z-index:25;bottom:calc(100px + env(safe-area-inset-bottom));right:20px;width:46px;height:46px;border-radius:50%;background:var(--surface);border:1.5px solid var(--border);color:var(--text);box-shadow:0 8px 24px rgba(0,0,0,.12);cursor:pointer;display:grid;place-items:center;font-size:18px;font-weight:800;font-family:inherit;padding:0;line-height:1;opacity:0;transform:translateY(20px) scale(.7);pointer-events:none;transition:opacity .3s cubic-bezier(.4,0,.2,1), transform .35s cubic-bezier(.34,1.56,.64,1), background-color .2s ease;}
+.scroll-top.show{opacity:1;transform:translateY(0) scale(1);pointer-events:auto;}
+.scroll-top:hover{background:var(--surface2)}
+.scroll-top:active{transform:scale(.9)}
+.toast{position:fixed;left:50%;bottom:calc(95px + env(safe-area-inset-bottom));transform:translate(-50%,10px);z-index:50;background:var(--text);border:1px solid var(--border);color:var(--bg);border-radius:14px;padding:12px 16px;font-size:12px;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:.2s;max-width:calc(100% - 30px);text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.settings-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--border);font-size:13px}
+.settings-row:last-child{border-bottom:0}
+.settings-row span{color:var(--muted);font-size:11px}
+#resultModal .grid2{margin-bottom:18px;}
+#resultModal .modal-panel{padding:32px 24px;}
+#resultInsight{margin-top:10px;font-size:12px;color:var(--purple);font-weight:700;line-height:1.55;padding:10px 12px;background:rgba(139,92,246,.08);border-radius:12px;display:none;}
+
+@media (min-width:900px){
+  .graph-wrap{height:340px}
+  .bottom-nav{bottom:20px}
+  .scroll-top{bottom:110px;right:32px}
+}
+@media(max-width:600px){
+  .graph-wrap{height:250px}
+  .practice-text{font-size:13px;line-height:1.6;max-height:240px;}
+  .mode{font-size:10px;padding:10px 2px}
+  .mode span{font-size:15px}
+  .gs-row-inline{flex-direction:column;align-items:flex-start;gap:8px}
+  .community-form-footer .btn{min-width:110px;font-size:12px;padding:0 14px;}
+  .pin-box{width:46px;height:54px;font-size:22px;border-radius:12px;}
+  .splash-title{font-size:28px;}
+  .hz-scale{width:44px;}
+  .closer-btn{padding:8px 12px;font-size:11px}
+  .zone-colors{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+
+/* ============ ADMIN PANEL ============ */
+.admin-tabs { display: flex; gap: 8px; margin-bottom: 16px; background: var(--surface2); padding: 5px; border-radius: 14px; }
+.admin-tab { flex: 1; padding: 10px; text-align: center; font-size: 13px; font-weight: 700; color: var(--muted); border: none; background: transparent; border-radius: 10px; cursor: pointer; }
+.admin-tab.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+.admin-tab-content { display: none; }
+.admin-tab-content.active { display: block; }
+.admin-chat-item { display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--surface); border: 1.5px solid var(--border); border-radius: 14px; margin-bottom: 8px; cursor: pointer; transition: border-color 0.2s; }
+.admin-chat-item:hover { border-color: var(--purple); }
+.admin-chat-avatar { width: 40px; height: 40px; border-radius: 12px; background: var(--surface2); display: grid; place-items: center; font-size: 20px; }
+.admin-chat-info { flex: 1; min-width: 0; }
+.admin-chat-info strong { display: block; font-size: 14px; }
+.admin-chat-info span { display: block; font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ============ SUPPORT CHAT ============ */
+#supportModal .modal-panel{padding:0;max-width:480px;height:min(90dvh,700px);display:flex;flex-direction:column;overflow:hidden;border-radius:24px;}
+.support-header{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1.5px solid var(--border);background:var(--surface);flex:none;}
+.support-avatar{width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,var(--purple),var(--pink));color:#fff;display:grid;place-items:center;font-weight:800;font-size:18px;position:relative;flex:none;}
+.support-online-dot{position:absolute;bottom:-1px;right:-1px;width:12px;height:12px;border-radius:50%;background:#9ca3af;border:2px solid var(--surface);transition:background-color .3s ease;}
+.support-online-dot.online{background:#10b981;animation:onlinePulse 2s ease-in-out infinite;}
+@keyframes onlinePulse{0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.6);}50%{box-shadow:0 0 0 6px rgba(16,185,129,0);}}
+.support-info{flex:1;min-width:0;}
+.support-info strong{display:block;font-size:15px;font-weight:800;}
+.support-status{display:block;font-size:11px;color:var(--muted);margin-top:2px;font-weight:600;}
+.support-status.online{color:#10b981;}
+.support-close{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;display:grid;place-items:center;font-size:13px;font-family:inherit;padding:0;transition:all .25s ease;flex:none;}
+.support-close:hover{background:var(--border);transform:rotate(90deg);}
+.support-hours-banner{padding:7px 16px;text-align:center;font-size:11px;font-weight:600;color:var(--muted);background:rgba(139,92,246,.06);border-bottom:1px solid var(--border);flex:none;transition:all .3s ease;}
+.support-hours-banner.offline{background:rgba(99,102,241,.1);color:#6366f1;}
+.support-chat-area{flex:1;display:flex;flex-direction:column;min-height:0;background:var(--surface2);}
+#supportModal .chat-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:4px;}
+.chat-welcome{margin-bottom:8px;display:flex;flex-direction:column;align-items:flex-start;animation:bubbleIn .4s cubic-bezier(.2,.8,.2,1);}
+.chat-bubble-wrap{display:flex;flex-direction:column;max-width:82%;position:relative;margin-bottom:2px;}
+.chat-bubble-wrap.user{align-self:flex-end;align-items:flex-end;}
+.chat-bubble-wrap.owner{align-self:flex-start;align-items:flex-start;}
+.chat-bubble-wrap.bubble-new{animation:bubbleIn .35s cubic-bezier(.2,.8,.2,1);}
+@keyframes bubbleIn{from{opacity:0;transform:translateY(10px) scale(.96);}to{opacity:1;transform:translateY(0) scale(1);}}
+#supportModal .chat-bubble{max-width:100%;padding:8px 13px 5px;border-radius:16px;font-size:13.5px;line-height:1.45;position:relative;word-wrap:break-word;overflow-wrap:anywhere;}
+#supportModal .chat-bubble.user{background:var(--purple);color:#fff;border-bottom-right-radius:5px;}
+#supportModal .chat-bubble.owner{background:var(--surface);color:var(--text);border:1px solid var(--border);border-bottom-left-radius:5px;}
+.chat-bubble-text{white-space:pre-wrap;word-wrap:break-word;}
+.chat-bubble-time{font-size:9.5px;opacity:.65;text-align:right;margin-top:3px;letter-spacing:.02em;}
+.chat-bubble.user .chat-bubble-time{color:rgba(255,255,255,.85);}
+.chat-bubble.owner .chat-bubble-time{color:var(--muted);}
+.chat-bubble-actions{display:flex;gap:4px;margin-top:4px;opacity:0;transition:opacity .2s ease;}
+.chat-bubble-wrap:hover .chat-bubble-actions{opacity:1;}
+.chat-action-btn{width:24px;height:24px;border-radius:50%;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;font-size:11px;padding:0;display:grid;place-items:center;font-family:inherit;transition:all .15s ease;}
+.chat-action-btn:hover{background:var(--surface2);color:var(--purple);border-color:var(--purple);}
+.chat-reply-quote{font-size:11px;padding:5px 10px;border-left:2px solid var(--purple);background:rgba(139,92,246,.08);border-radius:6px;margin-bottom:4px;color:var(--muted);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.chat-reply-quote b{color:var(--purple);font-weight:800;}
+.chat-reactions{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;}
+.chat-reaction{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:10px;font-size:11px;background:var(--surface);border:1px solid var(--border);cursor:pointer;font-family:inherit;color:var(--text);transition:all .15s ease;}
+.chat-reaction:hover{border-color:var(--purple);}
+.chat-date-divider{text-align:center;font-size:10.5px;color:var(--muted);font-weight:700;margin:14px 0 6px;position:relative;}
+.chat-date-divider span{background:var(--surface2);padding:0 10px;position:relative;z-index:1;}
+.chat-date-divider::before{content:'';position:absolute;left:0;right:0;top:50%;height:1px;background:var(--border);}
+.chat-system-msg{text-align:center;font-size:11px;color:var(--muted);background:rgba(139,92,246,.08);border-radius:10px;padding:8px 12px;margin:8px auto;max-width:90%;font-weight:600;line-height:1.5;}
+.reaction-picker{position:fixed;z-index:100;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:5px;display:flex;gap:2px;box-shadow:var(--shadow);animation:pickerIn .2s cubic-bezier(.2,.8,.2,1);}
+@keyframes pickerIn{from{opacity:0;transform:scale(.8);}to{opacity:1;transform:scale(1);}}
+.reaction-picker button{width:34px;height:34px;border:none;background:transparent;border-radius:8px;cursor:pointer;font-size:18px;padding:0;display:grid;place-items:center;transition:background .15s ease;}
+.reaction-picker button:hover{background:var(--surface2);}
+.chat-reply-preview{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface);border-top:1.5px solid var(--border);animation:replyIn .25s ease;flex:none;}
+@keyframes replyIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.chat-reply-preview-content{flex:1;min-width:0;border-left:2px solid var(--purple);padding-left:8px;display:flex;flex-direction:column;gap:2px;}
+.chat-reply-preview-content b{font-size:11px;color:var(--purple);font-weight:800;}
+.chat-reply-preview-content span{font-size:11.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.chat-reply-cancel{width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;display:grid;place-items:center;font-size:11px;padding:0;font-family:inherit;transition:all .15s ease;}
+.chat-reply-cancel:hover{color:var(--red);border-color:var(--red);}
+#supportModal .chat-input-row{padding:10px 12px;background:var(--surface);border-top:1.5px solid var(--border);display:flex;gap:8px;flex:none;}
+#supportModal .chat-input-row input{flex:1;background:var(--surface2);border:1.5px solid var(--border);border-radius:20px;padding:10px 16px;color:var(--text);font-size:13px;outline:none;font-family:inherit;transition:border-color .2s ease;}
+#supportModal .chat-input-row input:focus{border-color:var(--purple);}
+.chat-send-btn{width:42px;height:42px;border-radius:50%;border:none;background:var(--gradient);color:#fff;font-size:16px;cursor:pointer;display:grid;place-items:center;flex:none;padding:0;transition:transform .15s ease, filter .2s ease;box-shadow:0 4px 12px rgba(139,92,246,.3);}
+.chat-send-btn:hover{filter:brightness(1.05);}
+.chat-send-btn:active{transform:scale(.92);}
+
+/* ============ THANKS MODAL ============ */
+.thanks-panel{text-align:center;padding:36px 24px 28px;}
+.thanks-icon{font-size:56px;margin-bottom:16px;display:inline-block;animation:thanksPop .6s cubic-bezier(.3,1.5,.5,1);filter:drop-shadow(0 8px 24px rgba(139,92,246,.4));}
+@keyframes thanksPop{0%{transform:scale(0) rotate(-30deg);}60%{transform:scale(1.2) rotate(10deg);}100%{transform:scale(1) rotate(0);}}
+.thanks-panel h2{font-size:22px;margin-bottom:10px;background:linear-gradient(135deg,var(--purple),var(--pink));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+.thanks-panel p{font-size:13px;line-height:1.6;color:var(--muted);margin-bottom:22px;}
+.thanks-panel .btn{width:100%;}
+</style>
+</head>
+<body>
+
+<div class="auth-screen" id="authScreen">
+  <div class="auth-logo">✦</div>
+  <div class="auth-title">Добро пожаловать в Отклик</div>
+  <div class="auth-desc">Безопасное пространство для тренировки голоса. Войди, чтобы сохранять свой прогресс в облаке.</div>
+  <button class="btn-google" id="googleLoginBtn">
+    <svg viewBox="0 0 48 48" width="20" height="20"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.6 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.4-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.2 5.6l6.2 5.2C41 35.3 44 30.1 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+    Войти через Google
+  </button>
+  <div style="margin-top:20px;font-size:11px;color:var(--muted);">🔒 Голос не уходит на сервер · 100% приватно</div>
+</div>
+
+<div class="splash-screen" id="splashScreen">
+  <div class="splash-logo">✦</div>
+  <div class="splash-title">Отклик</div>
+  <div class="splash-desc">Тихое, безопасное пространство для твоего голоса</div>
+  <div class="splash-pin" id="splashPin">
+    <div class="splash-pin-label">Введи PIN-код</div>
+    <div class="pin-boxes" id="splashPinBoxes">
+      <input type="tel" class="pin-box" maxlength="1" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+      <input type="tel" class="pin-box" maxlength="1" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+      <input type="tel" class="pin-box" maxlength="1" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+      <input type="tel" class="pin-box" maxlength="1" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+    </div>
+    <div class="splash-pin-error" id="splashPinError"></div>
+    <button class="splash-pin-btn" id="splashPinBtn">Разблокировать</button>
+  </div>
+  <div class="splash-privacy">🔒 Голос не уходит на сервер · 100% приватно</div>
+</div>
+
+<div class="modal" id="onboardingModal">
+  <div class="modal-panel">
+    <div class="onb-step active" id="step-goal">
+      <h2>Давай познакомимся</h2>
+      <p>Какая у тебя цель?</p>
+      <div class="onb-options" id="onbGoalOptions">
+        <button class="onb-option" data-val="feminine">Сделать голос более женственным</button>
+        <button class="onb-option" data-val="masculine">Сделать голос более мужественным</button>
+        <button class="onb-option" data-val="neutral">Нейтральный / андрогинный голос</button>
+        <button class="onb-option" data-val="stabilize">Стабилизировать и говорить увереннее</button>
+      </div>
+      <button class="btn btn-primary" id="nextToIdentity" disabled>Продолжить</button>
+    </div>
+
+    <div class="onb-step" id="step-identity">
+      <h2>Как ты себя ощущаешь?</h2>
+      <p>Это поможет нам лучше понимать нашу аудиторию.</p>
+      <div class="onb-options" id="onbIdentityOptions">
+        <button class="onb-option" data-val="trans_woman">Транс-девушка</button>
+        <button class="onb-option" data-val="trans_man">Транс-парень</button>
+        <button class="onb-option" data-val="nonbinary">Небинарная персона</button>
+        <button class="onb-option" data-val="other">Другое</button>
+        <button class="onb-option" data-val="prefer_not_to_say">Не хочу отвечать</button>
+      </div>
+      <button class="btn btn-primary" id="nextToProfile" disabled>Продолжить</button>
+    </div>
+
+    <div class="onb-step" id="step-profile">
+      <h2>Твой профиль</h2>
+      <p>Выбери аватар и придумай имя.</p>
+      <label class="field-label">Аватар</label>
+      <div class="avatar-grid" id="avatarGrid">
+        <button class="avatar-opt" data-val="🦊">🦊</button><button class="avatar-opt" data-val="🌸">🌸</button>
+        <button class="avatar-opt" data-val="✨">✨</button><button class="avatar-opt" data-val="🦋">🦋</button>
+        <button class="avatar-opt" data-val="🌙">🌙</button><button class="avatar-opt" data-val="🐱">🐱</button>
+        <button class="avatar-opt" data-val="🌿">🌿</button><button class="avatar-opt" data-val="🔥">🔥</button>
+        <button class="avatar-opt" data-val="🎧">🎧</button><button class="avatar-opt" data-val="🎨">🎨</button>
+      </div>
+      <label class="field-label">Никнейм</label>
+      <input class="input" id="onbNickname" placeholder="Как к тебе обращаться?" maxlength="30" style="margin-bottom: 16px;">
+      <label class="field-label">Username (уникальный)</label>
+      <div class="input-wrapper" style="margin-bottom: 24px;">
+        <span class="at-symbol">@</span>
+        <input class="input" id="onbUsername" placeholder="username" maxlength="20" autocomplete="off">
+      </div>
+      <button class="btn btn-primary" id="onbFinish">Завершить</button>
+    </div>
+  </div>
+</div>
+
+<div class="app" id="mainApp">
+  <div class="app-inner">
+    <header>
+      <div><div class="eyebrow">Тихое пространство для практики</div><div class="greeting" id="appGreeting">Отклик<span aria-hidden="true"> ✦</span></div><div class="subgreeting" id="headerSubtitle">Твой голос — твой путь</div></div>
+      <div class="header-actions">
+        <button class="closer-btn" id="closerBtn" type="button">Ближе</button>
+        <button class="avatar" id="settingsOpen" aria-label="Настройки"><span class="avatar-emoji" id="mainAvatarEmoji">🦊</span><span class="avatar-unread-dot" id="avatarUnreadDot"></span></button>
+      </div>
+    </header>
+
+    <section class="page active" id="page-home" aria-label="Главная">
+      <article class="card hero">
+        <div class="hero-top">
+          <div><h2>Настрой голос на себя</h2><p>Небольшая регулярная практика важнее идеального результата.</p></div>
+          <div class="mic-status" id="micStatus">
+            <span class="mic-dot"></span>
+            <span class="mic-text" id="micText">Мик выкл</span>
+          </div>
+        </div>
+        <div class="mode-select" role="group" aria-label="Программа тренировки">
+          <button class="mode selected" data-mode="fem"><span>✿</span>Феминизация</button>
+          <button class="mode" data-mode="masc"><span>◈</span>Маскулинизация</button>
+          <button class="mode" data-mode="steady"><span>〰</span>Стабилизация</button>
+        </div>
+
+        <!-- HRT Widget -->
+        <div class="hrt-widget" id="hrtWidget">
+          <div class="hrt-header">
+            <div>
+              <div class="hrt-title">День <span id="hrtDaysNum">—</span> на ЗГТ</div>
+              <div class="hrt-sub" id="hrtSubtitle">Укажи дату начала — и мы будем поддерживать тебя каждый день.</div>
+            </div>
+            <button class="hrt-set-btn" id="hrtSetDateBtn">Указать дату</button>
+          </div>
+          <div class="hrt-taken-row" id="hrtTakenRow">
+            <label class="hrt-taken-label">
+              <span class="hrt-taken-check" id="hrtTakenCheck"></span>
+              <span id="hrtTakenText">Сегодня была доза ЗГТ</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- FTM Voice Progress Widget -->
+        <div class="voice-progress-widget" id="voiceProgressWidget">
+          <div class="vp-header">
+            <span class="vp-title">📉 График снижения голоса</span>
+            <button class="vp-export-btn" id="exportDoctorBtn">📄 Экспорт для врача</button>
+          </div>
+          <div class="vp-chart-wrap"><canvas id="voiceProgressCanvas"></canvas></div>
+          <div class="vp-hint" id="vpHint">Данные появятся после нескольких сохранённых сессий</div>
+        </div>
+
+        <div class="graph-controls">
+          <div class="graph-badges">
+            <div class="graph-badge"><span class="hz-num" id="hzBadge">— Hz</span> <small id="pitchQuality">· ожидание</small></div>
+            <div class="resonance-badge" title="Резонанс (яркость голоса)">
+              <span>✨</span>
+              <div class="resonance-meter"><span class="resonance-fill" id="resonanceFill"></span></div>
+              <span class="resonance-value" id="resonanceValue">0%</span>
+            </div>
+          </div>
+          <div class="graph-buttons">
+            <div class="gmode-dropdown">
+              <button class="gmode-toggle" id="gmodeToggle" aria-label="Стиль графика" title="Стиль графика" aria-haspopup="true" aria-expanded="false">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l4-8 4 4 4-8 4 6"/></svg>
+                <svg class="gmode-chevron" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div class="gmode-panel" id="gmodePanel" role="menu">
+                <button class="gmode active" data-graph="line">Линия</button>
+                <button class="gmode" data-graph="area">Область</button>
+                <button class="gmode" data-graph="glow">Свечение</button>
+              </div>
+            </div>
+            <button class="graph-settings-btn" id="graphSettingsBtn" aria-label="Настройки графика" title="Настройки графика">⚙</button>
+          </div>
+        </div>
+
+        <div class="graph-settings" id="graphSettings">
+          <div class="graph-settings-inner">
+            <div class="gs-row">
+              <span class="gs-label">Толщина линии</span>
+              <div class="range-inputs" style="align-items:center; gap:10px;">
+                <input type="range" id="lineThickness" min="1" max="8" step="0.5" value="2.5">
+                <span id="lineThicknessValue" style="min-width:36px; text-align:center; font-weight:800; font-size:12px;">2.5</span>
+              </div>
+            </div>
+            <div class="gs-row">
+              <span class="gs-label">Цвет линии</span>
+              <div style="display:flex; align-items:center; gap:10px;">
+                <input type="color" id="lineColor" value="#8b5cf6" style="width:40px; height:32px; border:none; border-radius:8px; background:transparent; cursor:pointer; padding:0;">
+                <span style="font-size:12px; color:var(--muted); font-weight:700;" id="lineColorHex">#8b5cf6</span>
+              </div>
+            </div>
+            <div class="gs-row">
+              <span class="gs-label">Целевой диапазон (Гц)</span>
+              <div class="range-inputs">
+                <input type="number" id="targetLow" min="50" max="400" step="1" value="165">
+                <span>—</span>
+                <input type="number" id="targetHigh" min="50" max="400" step="1" value="255">
+              </div>
+            </div>
+            <div class="gs-row">
+              <div class="gs-row-inline">
+                <span class="gs-label">Показывать целевой режим</span>
+                <label class="toggle">
+                  <input type="checkbox" id="showTarget" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+            <div class="gs-row">
+              <div class="gs-row-inline">
+                <span class="gs-label">Разбивка по полу</span>
+                <label class="toggle">
+                  <input type="checkbox" id="showZones" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+            <div class="gs-row">
+              <div class="gs-row-inline">
+                <span class="gs-label">Цвета зон</span>
+                <button class="gs-reset-btn" id="resetZoneColors">Сбросить</button>
+              </div>
+              <div class="zone-colors">
+                <label class="zone-color-item"><input type="color" id="colorMale" value="#6495ED"><span>Мужской</span></label>
+                <label class="zone-color-item"><input type="color" id="colorAndro" value="#ffffff"><span>Андро</span></label>
+                <label class="zone-color-item"><input type="color" id="colorFemale" value="#ffa0be"><span>Женский</span></label>
+                <label class="zone-color-item"><input type="color" id="colorTarget" value="#10b981"><span>Цель</span></label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="graph-wrap" id="graphWrap">
+          <canvas id="voiceCanvas"></canvas>
+          <div class="graph-placeholder" id="graphPlaceholder">
+            <div class="graph-placeholder-icon">🎙️</div>
+            <div class="graph-placeholder-title">Здесь появится твой голос</div>
+            <div class="graph-placeholder-text">Нажми «Начать тренировку», чтобы увидеть высоту и резонанс в реальном времени</div>
+          </div>
+          <div class="hz-scale" id="hzScale">
+            <div class="hz-label" data-hz="60" style="top:100%">60</div>
+            <div class="hz-label" data-hz="100" style="top:86%">100</div>
+            <div class="hz-label" data-hz="150" style="top:69%">150</div>
+            <div class="hz-label" data-hz="200" style="top:52%">200</div>
+            <div class="hz-label" data-hz="250" style="top:34%">250</div>
+            <div class="hz-label" data-hz="300" style="top:17%">300</div>
+            <div class="hz-label" data-hz="350" style="top:0">350</div>
+          </div>
+        </div>
+        <div class="graph-legend"><b id="targetLegend">Цель: 165–255 Гц</b></div>
+        <div class="zone-legend" id="zoneLegend">
+          <span class="zone-legend-item"><span class="zone-dot male"></span>Мужской</span>
+          <span class="zone-legend-item"><span class="zone-dot andro"></span>Андрогинный</span>
+          <span class="zone-legend-item"><span class="zone-dot female"></span>Женский</span>
+        </div>
+
+        <button class="btn btn-primary" id="micBtn" style="margin-top:16px;">🎙️ Начать тренировку</button>
+        <button class="btn btn-secondary" id="finishBtn" style="display:none;margin-top:9px;" disabled>Завершить</button>
+
+        <div class="session-meta">
+          <div class="mini-stat"><strong id="elapsedValue">00:00</strong><span>Время сессии</span></div>
+          <div class="mini-stat"><strong id="inTargetValue">00:00</strong><span>В целевой зоне</span></div>
+          <div class="mini-stat"><strong id="avgPitchValue">—</strong><span>Средний тон, Гц</span></div>
+        </div>
+
+        <div class="practice-card">
+          <div class="practice-header"><span class="practice-label">Текст для практики</span></div>
+          <div class="practice-text" id="practiceText" contenteditable="true" spellcheck="false" role="textbox" aria-label="Текст для практики"></div>
+          <div class="practice-hint">Нажми, чтобы заменить своим · <span class="practice-count"><span id="practiceCount">0</span> / 2000</span></div>
+        </div>
+        <div class="notice"><span>🔒</span><span><b>Приватно по умолчанию.</b> Звук анализируется в браузере. Данные сохраняются в твоём аккаунте.</span></div>
+      </article>
+
+      <div class="grid2">
+        <article class="card stat-card unlit" id="streakCard"><span class="stat-icon fire">🔥</span><div class="stat-label">Текущий стрик</div><div class="stat-number"><span id="streakValue">0</span> <small>дн.</small></div><div class="progress-line"><span id="streakProgress"></span></div><div style="font-size:10px;color:var(--muted)" id="streakHint">Начни с одной короткой практики</div></article>
+        <article class="card stat-card"><span class="stat-icon">◷</span><div class="stat-label">В целевой зоне</div><div class="stat-number"><span id="totalTarget">0</span> <small>мин</small></div><div style="font-size:10px;color:var(--muted);margin-top:8px" id="totalSessions">0 сохранённых сессий</div></article>
+      </div>
+    </section>
+
+    <section class="page" id="page-trainer" aria-label="Тренажёр">
+      <div class="section-head" style="margin-top:0"><div><h2>Тренажёр</h2><p>Практикуйся короткими комфортными подходами</p></div></div>
+      <article class="card">
+        <h2 style="font-size:16px;margin:0 0 8px">Перед началом</h2><p style="font-size:12px;color:var(--muted);line-height:1.7;margin:0">Сядь удобно, расслабь шею и плечи. Не пытайся силой удерживать высоту: если появляется боль, першение или усталость, остановись и отдохни.</p>
+        <div class="settings-row"><div>Феминизация <span>Мягкая практика более высокого тона</span></div><strong>165–255 Гц</strong></div>
+        <div class="settings-row"><div>Маскулинизация <span>Комфортная практика более низкого тона</span></div><strong>85–145 Гц</strong></div>
+        <div class="settings-row"><div>Стабилизация <span>Удержание выбранного диапазона</span></div><strong>120–200 Гц</strong></div>
+        <button class="btn btn-primary" style="margin-top:18px" data-go="home">Перейти к тренировке</button>
+      </article>
+      <div class="section-head"><div><h2>Последние сессии</h2><p>История в облаке</p></div></div>
+      <div class="history-list" id="recentSessions"></div>
+    </section>
+
+    <section class="page" id="page-programs" aria-label="Программы">
+      <div class="section-head" style="margin-top:0"><div><h2>Программы</h2><p>Пошаговые курсы для твоего голоса</p></div></div>
+      <div class="programs-grid" id="programsGrid"></div>
+    </section>
+
+    <section class="page" id="page-community" aria-label="Лента поддержки">
+      <div class="section-head" style="margin-top:0"><div><h2>Лента поддержки</h2><p>Тёплые слова от тех, кто проходит похожий путь</p></div></div>
+      <form class="card community-form" id="communityForm">
+        <label class="field-label" for="communityText">Поделись поддержкой (без фото — только слова)</label>
+        <textarea class="textarea" id="communityText" maxlength="280" placeholder="Например: «Ты справишься. Каждая практика — это шаг.»" required></textarea>
+        <div class="community-form-footer"><span class="community-counter"><span id="communityCount">0</span> / 280</span><button class="btn btn-primary" type="submit" id="communitySubmitBtn">Отправить</button></div>
+      </form>
+      <div class="section-head" style="margin:8px 2px 0"><div><h2>Лента</h2><p id="communityMeta">Пока тихо</p></div></div>
+      <div class="community-list" id="communityList"></div>
+    </section>
+  </div>
+</div>
+
+<nav class="bottom-nav" id="bottomNav" style="display:none;">
+  <button class="nav-item active" data-nav="home"><span class="nav-icon">⌂</span>Главная</button>
+  <button class="nav-item" data-nav="trainer"><span class="nav-icon">〰</span>Тренажёр</button>
+  <button class="nav-item" data-nav="programs"><span class="nav-icon">🎓</span>Программы</button>
+  <button class="nav-item" data-nav="community"><span class="nav-icon">✿</span>Лента</button>
+</nav>
+
+<button class="scroll-top" id="scrollTopBtn" aria-label="Наверх" title="Наверх">↑</button>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<div class="modal" id="resultModal" role="dialog" aria-modal="true">
+  <div class="modal-panel">
+    <div style="text-align:center;margin-bottom:22px"><div style="font-size:42px">✨</div><h2>Сессия завершена</h2><p id="resultSubtitle" style="margin-bottom:0">Ты уделил(а) время себе — это уже результат.</p><div id="resultInsight"></div></div>
+    <div class="grid2">
+      <div class="card" style="text-align:center;padding:14px"><strong id="resultTarget" style="font-size:24px">0 сек</strong><div style="font-size:10px;color:var(--muted)">В целевой зоне</div></div>
+      <div class="card" style="text-align:center;padding:14px"><strong id="resultAverage" style="font-size:24px">—</strong><div style="font-size:10px;color:var(--muted)">Средний, Гц</div></div>
+    </div>
+    <button class="btn btn-primary" id="saveSessionBtn">Сохранить в аккаунт</button>
+    <button class="btn btn-secondary" id="discardSessionBtn" style="width:100%;margin-top:9px">Удалить</button>
+  </div>
+</div>
+
+<div class="modal" id="closerModal" role="dialog" aria-modal="true">
+  <div class="modal-panel">
+    <div class="modal-controls"><button class="ctrl-btn" data-close="closerModal" aria-label="Закрыть"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button></div>
+    <div class="closer-hero"><div class="closer-star">✨</div><h2>Отклик: Ближе</h2><p class="closer-desc">Вы уже прошли базовый путь. Пришло время углубиться. Откройте доступ к полной академии программ, расширенному трекеру ЗГТ и глубокой аналитике. А главное — помогите проекту оставаться бесплатным, безопасным и независимым. Без рекламы и сбора данных.</p></div>
+    <div class="closer-features">
+      <div class="closer-feature"><div class="closer-feature-icon">🎓</div><div><strong>Академия программ</strong><span>Пошаговые курсы на 30/60/90 дней с чётким планом и обратной связью</span></div></div>
+      <div class="closer-feature"><div class="closer-feature-icon">💊</div><div><strong>Расширенный трекер ЗГТ</strong><span>Напоминания, графики, экспорт для врача, анализ результатов анализов — робот подскажет, что хорошо, а что стоит обсудить с врачом</span></div></div>
+      <div class="closer-feature"><div class="closer-feature-icon">📈</div><div><strong>Расширенная аналитика</strong><span>История за всё время, сравнение «до/после», тренды и инсайты о вашем голосе</span></div></div>
+      <div class="closer-feature"><div class="closer-feature-icon">💚</div><div><strong>Проект живёт благодаря вам</strong><span>Никакой рекламы, никакого сбора данных. Только голос и вы — в безопасном пространстве</span></div></div>
+    </div>
+    <button class="btn closer-cta" id="closerCta">Хочу поддержать</button>
+    <p class="closer-note">Оформить можно в любой момент. Никаких скрытых платежей и обязательств.</p>
+  </div>
+</div>
+
+<div class="modal" id="hrtDateModal" role="dialog" aria-modal="true">
+  <div class="modal-panel">
+    <div class="modal-controls"><button class="ctrl-btn" data-close="hrtDateModal" aria-label="Закрыть"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button></div>
+    <h2>Когда началась ЗГТ?</h2>
+    <p>Мы посчитаем твой день и будем поддерживать в тренировках. Только ты видишь эту дату.</p>
+    <input class="input" type="date" id="hrtDateInput" style="margin-bottom:16px;">
+    <button class="btn btn-primary" id="hrtDateSaveBtn">Сохранить</button>
+    <button class="btn btn-secondary" style="width:100%;margin-top:9px;" data-close="hrtDateModal">Отмена</button>
+  </div>
+</div>
+
+<div class="modal" id="freeProgramModal" role="dialog" aria-modal="true">
+  <div class="modal-panel">
+    <div class="modal-controls"><button class="ctrl-btn" data-close="freeProgramModal" aria-label="Закрыть"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button></div>
+    <h2>🌱 7 дней знакомства с голосом</h2>
+    <p>Короткие практики на каждый день. Раскрой любой день, чтобы увидеть инструкцию.</p>
+    <div id="freeProgramDays"></div>
+    <button class="btn btn-primary" style="margin-top:14px;" data-go="home" onclick="closeModal('freeProgramModal')">К тренировке</button>
+  </div>
+</div>
+
+<div class="modal" id="settingsModal" role="dialog" aria-modal="true">
+  <div class="modal-panel">
+    <div class="modal-controls">
+      <button class="ctrl-btn" id="themeToggle" aria-label="Сменить тему">🌙</button>
+      <button class="ctrl-btn" data-close="settingsModal" aria-label="Закрыть"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>
+    </div>
+    <div class="profile-header">
+      <button class="profile-avatar" id="settingsAvatar" aria-label="Изменить аватар"><span class="avatar-text" id="settingsAvatarText">🦊</span></button>
+      <div class="profile-info">
+        <input class="profile-name-input" id="settingsNickname" maxlength="30" placeholder="Твоё имя" value="Пользователь">
+        <p id="settingsEmail">email@gmail.com</p>
+      </div>
+    </div>
+    <div class="avatar-picker" id="avatarPicker"><div class="avatar-picker-inner"><div class="avatar-grid" id="settingsAvatarGrid">
+      <button class="avatar-opt" data-val="🦊">🦊</button><button class="avatar-opt" data-val="🌸">🌸</button>
+      <button class="avatar-opt" data-val="✨">✨</button><button class="avatar-opt" data-val="🦋">🦋</button>
+      <button class="avatar-opt" data-val="🌙">🌙</button><button class="avatar-opt" data-val="🐱">🐱</button>
+      <button class="avatar-opt" data-val="🌿">🌿</button><button class="avatar-opt" data-val="🔥">🔥</button>
+      <button class="avatar-opt" data-val="🎧">🎧</button><button class="avatar-opt" data-val="🎨">🎨</button>
+    </div></div></div>
+    
+    <div class="settings-section" id="adminSection" style="display:none;">
+      <div class="settings-label no-select">Админ-панель</div>
+      <button class="btn btn-secondary" style="width:100%;" id="adminPanelBtn">👑 Открыть панель</button>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-label no-select">Напоминания во время тренировки</div>
+      <div class="reminder-row"><label class="toggle"><input type="checkbox" id="waterToggle"><span class="toggle-slider"></span></label><div class="reminder-label">💧 Попить воды<small>Мягкое напоминание не забывать про воду</small></div><input class="reminder-input" type="number" id="waterInterval" min="3" max="60" step="1" value="15" disabled><span class="reminder-unit">мин</span></div>
+      <div class="reminder-row"><label class="toggle"><input type="checkbox" id="restToggle"><span class="toggle-slider"></span></label><div class="reminder-label">😌 Отдых для связок<small>Короткая пауза, чтобы голос не уставал</small></div><input class="reminder-input" type="number" id="restInterval" min="3" max="60" step="1" value="20" disabled><span class="reminder-unit">мин</span></div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-label no-select">Безопасность</div>
+      <p class="settings-hint no-select" id="pinSettingsHint">Защити вход 4-значным PIN-кодом. Он будет запрашиваться при каждом заходе.</p>
+      <button class="btn btn-link-email" id="pinSettingsBtn">Установить PIN-код</button>
+    </div>
+    <div class="settings-section">
+      <div class="settings-label no-select">Действия</div>
+      <button class="btn btn-secondary" style="width:100%;margin-bottom:8px; justify-content:flex-start;position:relative;" id="openSupportBtn">💬 Поддержка (чат)<span class="support-unread-dot" id="supportUnreadDot"></span></button>
+      <button class="btn btn-secondary" style="width:100%;justify-content:flex-start;" id="openFeedbackBtn">📝 Оставить отзыв / Жалобу</button>
+    </div>
+    <div class="settings-section">
+      <div class="settings-label no-select">Email</div>
+      <p class="settings-hint no-select">Привяжи email, чтобы не потерять доступ, если Google-аккаунт будет утерян.</p>
+      <button class="btn btn-link-email" id="linkEmailBtn">Привязать Email</button>
+    </div>
+    <button class="btn btn-delete" style="margin-top:8px;" id="deleteAccountBtn">Удалить аккаунт навсегда</button>
+    <button class="btn btn-danger" style="width:100%;margin-top:9px;" id="logoutBtn">Выйти из аккаунта</button>
+  </div>
+</div>
+
+<div class="modal" id="adminModal" role="dialog" aria-modal="true">
+  <div class="modal-panel">
+    <div class="modal-controls"><button class="ctrl-btn" data-close="adminModal" aria-label="Закрыть"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button></div>
+    <h2>Админ-панель</h2>
+    <div class="admin-tabs">
+      <button class="admin-tab active" data-tab="admin-chats">Чаты</button>
+      <button class="admin-tab" data-tab="admin-feedback">Фидбек</button>
+    </div>
+    <div id="admin-chats" class="admin-tab-content active">
+      <div id="adminChatList"></div>
+      <div id="adminChatView" style="display:none;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+          <button class="btn btn-secondary" onclick="backToChats()" style="min-height:36px; padding:0 12px; font-size:12px;">← Назад</button>
+          <span id="adminChatName" style="font-weight:800;"></span>
+        </div>
+        <div class="chat-container">
+          <div class="chat-messages" id="adminChatMessages"></div>
+          <div class="chat-input-row">
+            <input type="text" id="adminChatInput" placeholder="Ответить...">
+            <button id="adminChatSendBtn">Отпр.</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="admin-feedback" class="admin-tab-content">
+      <div id="adminFeedbackList"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="pinSetupModal" role="dialog" aria-modal="true">
+  <div class="modal-panel">
+    <div class="modal-controls"><button class="ctrl-btn" data-close="pinSetupModal" aria-label="Закрыть"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button></div>
+    <h2 id="pinSetupTitle">Установите PIN-код</h2>
+    <p id="pinSetupDesc">Придумайте 4-значный код. Он будет запрашиваться при каждом заходе на сайт.</p>
+    <div class="pin-boxes" id="pinSetupBoxes">
+      <input type="tel" class="pin-box" maxlength="1" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+      <input type="tel" class="pin-box" maxlength="1" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+      <input type="tel" class="pin-box" maxlength="1" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+      <input type="tel" class="pin-box" maxlength="1" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+    </div>
+    <div class="splash-pin-error" id="pinSetupError"></div>
+    <button class="btn btn-primary" id="pinSetupBtn">Продолжить</button>
+    <button class="btn btn-secondary" style="width:100%;margin-top:9px;" id="pinRemoveBtn">Убрать PIN-код</button>
+  </div>
+</div>
+
+<div class="modal" id="deleteAccountModal" role="dialog" aria-modal="true">
+  <div class="modal-panel">
+    <div class="modal-controls"><button class="ctrl-btn" data-close-delete="1" aria-label="Закрыть"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button></div>
+    <div style="text-align:center;margin-bottom:20px;"><div style="font-size:42px;">⚠️</div><h2>Удалить аккаунт?</h2><p>Это действие <b style="color:var(--red)">необратимо</b>. Все данные будут утеряны навсегда: сессии, настройки, профиль, лента. Восстановить аккаунт невозможно.</p></div>
+    <button class="btn btn-danger" id="confirmDeleteBtn" disabled style="width:100%;">Удалить (10)</button>
+    <button class="btn btn-secondary" id="cancelDeleteBtn" style="width:100%;margin-top:9px;">Отмена</button>
+  </div>
+</div>
+
+<div class="modal" id="feedbackModal" role="dialog" aria-modal="true">
+  <div class="modal-panel">
+    <div class="modal-controls"><button class="ctrl-btn" data-close="feedbackModal" aria-label="Закрыть"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button></div>
+    <h2>Обратная связь</h2>
+    <p>Нашли баг или есть идея? Напишите нам.</p>
+    <form id="feedbackForm">
+      <select class="input" id="fbType" style="margin-bottom:10px;"><option value="bug">🐛 Ошибка / Баг</option><option value="idea">💡 Идея / Предложение</option><option value="complaint">⚠️ Жалоба</option><option value="other">💬 Другое</option></select>
+      <textarea class="textarea" id="fbText" placeholder="Опишите детали..." required maxlength="2000"></textarea>
+      <button class="btn btn-primary" type="submit" style="margin-top:10px;">Отправить</button>
+    </form>
+    <button class="btn btn-secondary" style="width:100%;margin-top:9px;" onclick="closeModal('feedbackModal')">Отмена</button>
+  </div>
+</div>
+
+<div class="modal" id="feedbackThanksModal" role="dialog" aria-modal="true">
+  <div class="modal-panel thanks-panel">
+    <div class="thanks-icon">💌</div>
+    <h2>Спасибо за отзыв!</h2>
+    <p>Мы обязательно прочитаем и учтём. Ты делаешь Отклик лучше 💜</p>
+    <button class="btn btn-primary" onclick="closeModal('feedbackThanksModal')">Закрыть</button>
+  </div>
+</div>
+
+<div class="modal" id="supportModal" role="dialog" aria-modal="true">
+  <div class="modal-panel">
+    <div class="support-header">
+      <div class="support-avatar">К<span class="support-online-dot" id="supportOnlineDot"></span></div>
+      <div class="support-info">
+        <strong>Клик</strong>
+        <span class="support-status" id="supportStatus">в сети</span>
+      </div>
+      <button class="support-close" id="supportCloseBtn" data-close="supportModal" aria-label="Закрыть">✕</button>
+    </div>
+    <div class="support-hours-banner" id="supportHoursBanner"></div>
+    <div class="support-chat-area">
+      <div class="chat-messages" id="chatMessages"></div>
+      <div class="chat-reply-preview" id="chatReplyPreview" style="display:none;">
+        <div class="chat-reply-preview-content">
+          <b id="chatReplyName"></b>
+          <span id="chatReplyText"></span>
+        </div>
+        <button class="chat-reply-cancel" id="chatReplyCancel" aria-label="Отменить">✕</button>
+      </div>
+      <div class="chat-input-row">
+        <input type="text" id="chatInput" placeholder="Написать Клик..." maxlength="500">
+        <button id="chatSendBtn" class="chat-send-btn" aria-label="Отправить">➤</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="logoutConfirmModal" role="dialog" aria-modal="true">
+  <div class="modal-panel" style="text-align:center;">
+    <div class="modal-controls"><button class="ctrl-btn" data-close="logoutConfirmModal" aria-label="Закрыть"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button></div>
+    <div style="font-size:48px;margin-bottom:14px;">👋</div>
+    <h2>Выйти из аккаунта?</h2>
+    <p>Твой прогресс сохранится. Ты сможешь вернуться в любой момент.</p>
+    <button class="btn btn-danger" id="confirmLogoutBtn" style="width:100%;">Выйти</button>
+    <button class="btn btn-secondary" data-close="logoutConfirmModal" style="width:100%;margin-top:9px;">Остаться</button>
+  </div>
+</div>
+
+<div class="modal" id="linkEmailModal" role="dialog" aria-modal="true">
+  <div class="modal-panel">
+    <div class="modal-controls"><button class="ctrl-btn" data-close="linkEmailModal" aria-label="Закрыть"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button></div>
+    <h2>Привязка Email</h2>
+    <p>Введите email и пароль. Теперь вы сможете входить через них.</p>
+    <input class="input" type="email" id="linkEmailInput" placeholder="you@example.com" style="margin-bottom:10px;">
+    <input class="input" type="password" id="linkPassInput" placeholder="Пароль (мин. 6 символов)" style="margin-bottom:20px;">
+    <button class="btn btn-primary" id="confirmLinkEmailBtn">Привязать</button>
+    <button class="btn btn-secondary" style="width:100%;margin-top:9px;" onclick="closeModal('linkEmailModal')">Отмена</button>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut, linkWithCredential, EmailAuthProvider, deleteUser, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, collection, addDoc, onSnapshot, query, orderBy, limit, serverTimestamp, deleteDoc, updateDoc, getDocs, where, collectionGroup, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyA0qezCgiRp-ii8aaIiGfeRlls8PyEckLI",
+  authDomain: "otklik-1.firebaseapp.com",
+  projectId: "otklik-1",
+  storageBucket: "otklik-1.firebasestorage.app",
+  messagingSenderId: "76811353674",
+  appId: "1:76811353674:web:1669efc4014509385430b3"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+setPersistence(auth, browserLocalPersistence).catch(console.error);
+const db = getFirestore(app);
+
+const ADMIN_EMAIL = 'theboyslikeit.ru@gmail.com';
+
+try {
+  if (localStorage.getItem('otklik_has_account') === '1') {
+    document.getElementById('authScreen').classList.add('hidden');
+  }
+} catch(e){}
+
+const safeSession = (() => {
+  try { const ss = window.sessionStorage; ss.setItem('__t', '1'); ss.removeItem('__t'); return { get: k => ss.getItem(k), set: (k, v) => ss.setItem(k, v), remove: k => ss.removeItem(k) }; } 
+  catch (e) { const mem = {}; return { get: k => mem[k] || null, set: (k, v) => { mem[k] = v; }, remove: k => { delete mem[k]; } }; }
+})();
+
+let currentUser = null;
+let userData = null;
+let unsubscribeSessions = null;
+let unsubscribeCommunity = null;
+let unsubscribeSupport = null;
+let deleteTimer = null;
+let isAdmin = false;
+let adminTargetUid = null;
+let unsubAdminChat = null;
+let lastSessionsCache = [];
+
+let supportMessages = [];
+let supportChatOpen = false;
+let supportFirstRender = true;
+let lastSeenSupportTime = 0;
+let replyingTo = null;
+
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => [...document.querySelectorAll(s)];
+
+window.openModal = (id) => { document.getElementById(id).classList.add('open'); document.body.style.overflow = 'hidden'; };
+window.closeModal = (id) => { 
+  document.getElementById(id).classList.remove('open'); 
+  if(!document.querySelector('.modal.open')) document.body.style.overflow = ''; 
+  if (id === 'supportModal') { supportChatOpen = false; updateUnreadIndicator(); }
+};
+
+const savedTheme = localStorage.getItem('theme') || 'light';
+document.documentElement.dataset.theme = savedTheme;
+
+function updateThemeIcon(theme) {
+  const btn = $('#themeToggle');
+  if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+}
+updateThemeIcon(savedTheme);
+
+function applyTheme(theme) {
+  document.body.classList.add('theme-anim');
+  document.documentElement.dataset.theme = theme;
+  document.documentElement.style.background = theme === 'dark' ? '#09090b' : '#f4f4f5';
+  localStorage.setItem('theme', theme);
+  updateThemeIcon(theme);
+  clearTimeout(applyTheme._t);
+  applyTheme._t = setTimeout(() => document.body.classList.remove('theme-anim'), 400);
+}
+
+$('#themeToggle').addEventListener('click', () => { applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'); });
+$$('[data-close]').forEach(b => b.addEventListener('click', () => closeModal(b.dataset.close)));
+
+$$('.modal').forEach(m => {
+  m.addEventListener('click', (e) => {
+    if (e.target !== m) return;
+    if (m.id === 'deleteAccountModal') { cancelDelete(); return; }
+    if (m.id === 'onboardingModal') return;
+    closeModal(m.id);
+  });
+});
+
+function showToast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function navigate(target) {
+  $$('.page').forEach(p => p.classList.toggle('active', p.id === `page-${target}`));
+  $$('[data-nav]').forEach(b => b.classList.toggle('active', b.dataset.nav === target));
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+$$('[data-nav]').forEach(b => b.addEventListener('click', () => navigate(b.dataset.nav)));
+$$('[data-go]').forEach(b => b.addEventListener('click', () => navigate(b.dataset.go)));
+
+window.addEventListener('scroll', () => {
+  const btn = $('#scrollTopBtn');
+  if (btn) btn.classList.toggle('show', window.scrollY > 320);
+}, { passive: true });
+
+$('#scrollTopBtn').addEventListener('click', () => { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+
+async function hashPin(pin, uid) {
+  const input = pin + '::otklik::' + uid;
+  if (window.crypto && crypto.subtle) {
+    try { const enc = new TextEncoder(); const buf = await crypto.subtle.digest('SHA-256', enc.encode(input)); return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join(''); } catch (e) {}
+  }
+  let hash = 0; for (let i = 0; i < input.length; i++) { hash = ((hash << 5) - hash) + input.charCodeAt(i); hash |= 0; }
+  return 'fb_' + Math.abs(hash).toString(16);
+}
+
+function getPinValues(container) { return $$(`${container} .pin-box`).map(b => b.value).join(''); }
+
+function setupPinBoxes(container, onComplete) {
+  const boxes = $$(`${container} .pin-box`);
+  boxes.forEach((box, i) => {
+    box.addEventListener('input', (e) => {
+      const raw = e.target.value.replace(/\D/g, '');
+      box.value = raw ? raw[raw.length - 1] : '';
+      box.classList.toggle('filled', !!box.value);
+      box.classList.remove('error', 'correct');
+      if (box.value && i < boxes.length - 1) boxes[i + 1].focus();
+      if (boxes.every(b => b.value.length === 1) && onComplete) onComplete(boxes.map(b => b.value).join(''));
+    });
+    box.addEventListener('keydown', (e) => {
+      if (e.key === 'Backspace' && !box.value && i > 0) { boxes[i - 1].focus(); boxes[i - 1].value = ''; boxes[i - 1].classList.remove('filled'); }
+      if (e.key === 'ArrowLeft' && i > 0) boxes[i - 1].focus();
+      if (e.key === 'ArrowRight' && i < boxes.length - 1) boxes[i + 1].focus();
+    });
+    box.addEventListener('paste', (e) => {
+      e.preventDefault();
+      const data = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '');
+      if (!data) return;
+      boxes.forEach((b, idx) => { b.value = data[idx] || ''; b.classList.toggle('filled', !!b.value); b.classList.remove('error', 'correct'); });
+      if (boxes.every(b => b.value.length === 1) && onComplete) onComplete(boxes.map(b => b.value).join(''));
+      else { const next = boxes.find(b => !b.value); if (next) next.focus(); }
+    });
+    box.addEventListener('focus', () => { box.select && box.select(); });
+  });
+}
+
+function shakePinBoxes(container) {
+  $$(`${container} .pin-box`).forEach(b => { b.classList.remove('error'); void b.offsetWidth; b.classList.add('error'); });
+}
+
+async function highlightCorrectPinBoxes(container) {
+  const boxes = $$(`${container} .pin-box`);
+  for (let i = 0; i < boxes.length; i++) { boxes[i].classList.add('correct'); await new Promise(r => setTimeout(r, 130)); }
+  await new Promise(r => setTimeout(r, 220));
+}
+
+const splashScreen = $('#splashScreen');
+const splashPin = $('#splashPin');
+
+function showSplashWithPin() {
+  splashScreen.classList.add('show'); splashScreen.classList.remove('fade-out');
+  splashPin.classList.remove('revealed');
+  $('#splashPinError').classList.remove('show'); $('#splashPinError').textContent = '';
+  $$('#splashPinBoxes .pin-box').forEach(b => { b.value = ''; b.classList.remove('filled', 'error', 'correct'); });
+  requestAnimationFrame(() => { splashPin.classList.add('revealed'); setTimeout(() => { const f = $('#splashPinBoxes .pin-box'); if (f) f.focus(); }, 400); });
+}
+function showSplashWelcome() { splashScreen.classList.add('show'); splashScreen.classList.remove('fade-out'); splashPin.classList.remove('revealed'); }
+function hideSplash() { splashScreen.classList.add('fade-out'); splashScreen.classList.remove('show'); setTimeout(() => { splashScreen.classList.remove('fade-out'); }, 600); }
+
+setupPinBoxes('#splashPinBoxes', async (pin) => { await tryUnlockWithPin(pin); });
+
+async function tryUnlockWithPin(pin) {
+  if (!userData || !currentUser) return;
+  if (pin.length !== 4) return;
+  const hash = await hashPin(pin, currentUser.uid);
+  if (hash !== userData.pinHash) {
+    $('#splashPinError').textContent = 'Неверный PIN-код';
+    $('#splashPinError').classList.add('show');
+    shakePinBoxes('#splashPinBoxes');
+    setTimeout(() => { $$('#splashPinBoxes .pin-box').forEach(b => { b.value = ''; b.classList.remove('filled', 'error', 'correct'); }); const f = $('#splashPinBoxes .pin-box'); if (f) f.focus(); $('#splashPinError').classList.remove('show'); }, 900);
+    return;
+  }
+  $('#splashPinError').classList.remove('show');
+  $('#splashPinBtn').disabled = true;
+  await highlightCorrectPinBoxes('#splashPinBoxes');
+  safeSession.set('otklik_unlocked', currentUser.uid);
+  initAppUI(); setTimeout(hideSplash, 300);
+}
+
+$('#splashPinBtn').addEventListener('click', () => { tryUnlockWithPin(getPinValues('#splashPinBoxes')); });
+
+$('#googleLoginBtn').addEventListener('click', async () => {
+  const provider = new GoogleAuthProvider();
+  try { await signInWithPopup(auth, provider); } catch (e) { showToast('Ошибка входа: ' + e.message); }
+});
+
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    currentUser = user;
+    isAdmin = (user.email === ADMIN_EMAIL);
+    if (isAdmin) {
+      $('#adminSection').style.display = 'block';
+    } else {
+      $('#adminSection').style.display = 'none';
+    }
+    
+    try { localStorage.setItem('otklik_has_account', '1'); } catch(e){}
+    $('#authScreen').classList.add('hidden');
+    const docSnap = await getDoc(doc(db, 'users', user.uid));
+    if (docSnap.exists() && docSnap.data().onboardingCompleted) {
+      userData = docSnap.data();
+      const unlocked = safeSession.get('otklik_unlocked') === user.uid;
+      if (userData.pinHash && !unlocked) { showSplashWithPin(); } 
+      else {
+        showSplashWelcome();
+        setTimeout(() => { initAppUI(); setTimeout(hideSplash, 300); }, 1700);
+      }
+    } else {
+      showSplashWelcome();
+      setTimeout(() => { hideSplash(); setTimeout(() => $('#onboardingModal').classList.add('open'), 300); if(!$('#onbUsername').value) $('#onbUsername').value = 'user_' + Math.random().toString(36).substring(2, 7); }, 1300);
+    }
+  } else {
+    currentUser = null; userData = null; isAdmin = false;
+    try { localStorage.removeItem('otklik_has_account'); } catch(e){}
+    $('#authScreen').classList.remove('hidden');
+    $('#mainApp').classList.remove('ready');
+    $('#bottomNav').style.display = 'none';
+    safeSession.remove('otklik_unlocked');
+    if (unsubscribeSessions) unsubscribeSessions();
+    if (unsubscribeCommunity) unsubscribeCommunity();
+    if (unsubscribeSupport) unsubscribeSupport();
+    if (unsubAdminChat) unsubAdminChat();
+  }
+});
+
+let onbGoal = null, onbIdentity = null;
+$('#onbGoalOptions').addEventListener('click', (e) => {
+  const btn = e.target.closest('.onb-option'); if(!btn) return;
+  $$('#onbGoalOptions .onb-option').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected'); onbGoal = btn.dataset.val;
+  $('#nextToIdentity').disabled = !onbGoal;
+});
+$('#nextToIdentity').addEventListener('click', () => {
+  $('#step-goal').classList.remove('active'); $('#step-goal').classList.add('exit');
+  setTimeout(() => { $('#step-goal').style.display = 'none'; $('#step-identity').classList.add('active'); }, 300);
+});
+$('#onbIdentityOptions').addEventListener('click', (e) => {
+  const btn = e.target.closest('.onb-option'); if(!btn) return;
+  $$('#onbIdentityOptions .onb-option').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected'); onbIdentity = btn.dataset.val;
+  $('#nextToProfile').disabled = !onbIdentity;
+});
+$('#nextToProfile').addEventListener('click', () => {
+  $('#step-identity').classList.remove('active'); $('#step-identity').classList.add('exit');
+  setTimeout(() => { $('#step-identity').style.display = 'none'; $('#step-profile').classList.add('active'); }, 300);
+});
+
+let onbAvatar = '🦊';
+$('#avatarGrid').addEventListener('click', (e) => {
+  const btn = e.target.closest('.avatar-opt'); if(!btn) return;
+  $$('#avatarGrid .avatar-opt').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected'); onbAvatar = btn.dataset.val;
+});
+$('#avatarGrid').querySelector('.avatar-opt').classList.add('selected');
+$('#onbUsername').addEventListener('input', function() { this.value = this.value.replace(/[^a-zA-Z0-9]/g, '').toLowerCase(); });
+
+$('#onbFinish').addEventListener('click', async () => {
+  const nick = $('#onbNickname').value.trim();
+  const uname = $('#onbUsername').value.trim().toLowerCase();
+  if (!nick || !uname) { showToast('Заполни имя и username'); return; }
+  if (uname.length < 3) { showToast('Username должен быть не короче 3 символов'); return; }
+  if (!currentUser) { showToast('Ошибка авторизации'); return; }
+  const btn = $('#onbFinish'); btn.disabled = true; btn.textContent = 'Проверка...';
+  try {
+    const usernameDocRef = doc(db, 'usernames', uname);
+    const usernameSnap = await getDoc(usernameDocRef);
+    if (usernameSnap.exists()) { showToast('Этот username уже занят. Попробуй другой.'); btn.disabled = false; btn.textContent = 'Завершить'; return; }
+    userData = { email: currentUser.email, goal: onbGoal, identity: onbIdentity, profile: { nickname: nick, username: uname, avatar: onbAvatar }, onboardingCompleted: true, createdAt: serverTimestamp(), streak: 0, lastPracticeDate: null };
+    await setDoc(doc(db, 'users', currentUser.uid), userData, { merge: true });
+    await setDoc(doc(db, 'usernames', uname), { uid: currentUser.uid });
+    confetti({ particleCount: 160, spread: 80, origin: { y: 0.6 }, colors: ['#8b5cf6', '#d946ef', '#10b981', '#fbbf24', '#5BCEFA', '#F5A9B8'] });
+    setTimeout(() => { closeModal('onboardingModal'); initAppUI(); showToast('Добро пожаловать в Отклик!'); }, 900);
+  } catch (e) { showToast('Ошибка сохранения: ' + e.message); btn.disabled = false; btn.textContent = 'Завершить'; }
+});
+
+const MODES = { fem: { label: 'Феминизация', low: 165, high: 255, icon: '✿' }, masc: { label: 'Маскулинизация', low: 85, high: 145, icon: '◈' }, steady: { label: 'Стабилизация', low: 120, high: 200, icon: '〰' } };
+const PRACTICE_TEXT = 'Сядь удобно, расслабь плечи и сделай мягкий вдох. Этот текст — твой спутник в мире голоса. Читай его вслух спокойно и без спешки, прислушиваясь к себе. Твой голос — это ты: его тембр, его высота, его дыхание. Не сравнивай себя с другими — сравнивай только с собой вчерашним. Каждое слово — шаг к тому звучанию, которое живёт внутри тебя. Позволь голосу быть свободным, лёгким, настоящим. Помни: практика важнее идеала. Дыши ровно. Говори спокойно. Слушай себя. Ты уже звучишь — и это чудо.';
+
+let activeMode = 'fem', targetLow = MODES.fem.low, targetHigh = MODES.fem.high, showZones = true, showTarget = true;
+let lineThickness = 2.5, lineColor = '#8b5cf6';
+let modeAnimating = false;
+let zoneColors = { male: '#6495ED', andro: '#ffffff', female: '#ffa0be', target: '#10b981' };
+let waterReminderEnabled = false, waterInterval = 15, restReminderEnabled = false, restInterval = 20, waterTimer = null, restTimer = null;
+let scaleMin = 60, scaleMax = 350;
+
+function currentMode() { return { ...MODES[activeMode], low: targetLow, high: targetHigh }; }
+let audioCtx=null, stream=null, analyser=null, freqData=null, sourceNode=null, audioBuffer=null;
+let running=false, rafId=0, smoothPitch=null, lastValidAt=0, lastFrameAt=0, session=null, pendingSession=null;
+let canvas=$('#voiceCanvas'), canvasCtx=canvas.getContext('2d'), graphStyle = 'line';
+const HISTORY_WINDOW_MS = 24000, SAMPLE_INTERVAL_MS = 80, MAX_HISTORY_POINTS = Math.ceil(HISTORY_WINDOW_MS / SAMPLE_INTERVAL_MS) + 40;
+let pitchHistory = [], lastDisplaySample = 0, LABEL_WIDTH = 52;
+
+const PROGRAMS = [
+  { id: 'intro7', free: true, icon: '🌱', title: '7 дней знакомства с голосом', desc: 'Пошаговое введение в практику. Каждый день — 5 минут для себя.', meta: 'Бесплатно · 7 дней' },
+  { id: 'fem30', premium: true, icon: '✿', title: 'Феминизация за 30 дней', desc: 'Структурированный курс: от базового резонанса до естественной интонации.', meta: '30 дней' },
+  { id: 'mascRes', premium: true, icon: '◈', title: 'Маскулинизация: грудной голос', desc: 'Мягкое снижение высоты без напряжения. Работаем над грудным резонансом.', meta: '60 дней' },
+  { id: 'tremor', premium: true, icon: '〰', title: 'Убираем дрожь в голосе', desc: 'Стабильность и уверенность в звучании. Дыхание, опора, темп.', meta: '90 дней' },
+];
+
+const FREE_PROGRAM_DAYS = [
+  { title: 'День 1 · Дыхание', text: 'Диафрагмальное дыхание: положи руку на живот, вдох через нос на 4 счёта, выдох через рот на 6. 5 минут в комфортном темпе.' },
+  { title: 'День 2 · Расслабление', text: 'Сними напряжение в шее и плечах: мягкие круговые движения, наклоны головы. 3 минуты. Не делай через боль.' },
+  { title: 'День 3 · Резонанс', text: 'Мычание «ммм» с ощущением вибрации в груди и лице. Обрати внимание, где откликается сильнее всего. 5 минут.' },
+  { title: 'День 4 · Чтение вслух', text: 'Прочитай любимый отрывок медленно и мягко. Не старайся изменить голос — просто слушай себя и наслаждайся звучанием.' },
+  { title: 'День 5 · Высота', text: 'Скользи голосом от низкого тона к высокому и обратно, как сирена. Остановись там, где комфортно. 5 минут.' },
+  { title: 'День 6 · Выразительность', text: 'Прочитай тот же текст с разными эмоциями: спокойно, радостно, задумчиво, загадочно. Играй с интонацией.' },
+  { title: 'День 7 · Свобода', text: 'Спой любимую песню или прочитай стихотворение. Заметь, что изменилось за неделю. Поздравь себя — ты начала путь.' },
+];
+
+function initAppUI() {
+  $('#mainApp').classList.add('ready'); $('#bottomNav').style.display = 'grid';
+  $('#headerSubtitle').textContent = `Рада видеть тебя, ${userData.profile.nickname}`;
+  $('#settingsAvatarText').textContent = userData.profile.avatar || '🦊';
+  $('#settingsNickname').value = userData.profile.nickname;
+  $('#settingsEmail').textContent = userData.email || currentUser.email || '';
+  $('#mainAvatarEmoji').textContent = userData.profile.avatar || '🦊';
+  $$('#settingsAvatarGrid .avatar-opt').forEach(b => b.classList.toggle('selected', b.dataset.val === userData.profile.avatar));
+  updatePinSettingsUI(); restoreRemindersSettings();
+  
+  const savedMode = localStorage.getItem('otklik_mode');
+  if (savedMode && MODES[savedMode]) activeMode = savedMode;
+  else if (userData.goal === 'feminine') activeMode = 'fem';
+  else if (userData.goal === 'masculine') activeMode = 'masc';
+  else activeMode = 'steady';
+  
+  targetLow = MODES[activeMode].low; targetHigh = MODES[activeMode].high;
+  $('#targetLow').value = targetLow; $('#targetHigh').value = targetHigh;
+  $$('.mode').forEach(b => b.classList.toggle('selected', b.dataset.mode === activeMode));
+  $('#targetLegend').textContent = `Цель: ${targetLow}–${targetHigh} Гц`;
+  setPracticeText(); setupRealtimeListeners(); setupCommunityListener(); setupSupportListener(); updateStreakCard(); updateHrtWidget(); updateVoiceProgressVisibility(); renderPrograms();
+  requestAnimationFrame(() => { resizeCanvas(); drawGraph(); updateHzLabels(); });
+}
+
+function updatePinSettingsUI() {
+  const btn = $('#pinSettingsBtn'), hint = $('#pinSettingsHint');
+  if (!btn || !hint) return;
+  if (userData && userData.pinHash) { btn.textContent = 'Изменить PIN-код'; hint.textContent = 'PIN-код установлен. Он запрашивается при каждом заходе.'; }
+  else { btn.textContent = 'Установить PIN-код'; hint.textContent = 'Защити вход 4-значным PIN-кодом. Он будет запрашиваться при каждом заходе.'; }
+}
+
+/* ================= HRT WIDGET ================= */
+function animateCountUp(el, target, duration = 1100) {
+  if (!el) return;
+  const from = parseInt(el.textContent) || 0;
+  if (from === target) { el.textContent = target; return; }
+  const start = performance.now();
+  function step(now) {
+    const t = Math.min(1, (now - start) / duration);
+    const eased = 1 - Math.pow(1 - t, 3);
+    el.textContent = Math.round(from + (target - from) * eased);
+    if (t < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+async function updateHrtWidget() {
+  if (!userData) return;
+  const startDate = userData.profile?.hrtStartDate;
+  const daysEl = $('#hrtDaysNum');
+  const subEl = $('#hrtSubtitle');
+  const setBtn = $('#hrtSetDateBtn');
+  const takenRow = $('#hrtTakenRow');
+  const takenCheck = $('#hrtTakenCheck');
+  const takenText = $('#hrtTakenText');
+  
+  const isMasc = userData.identity === 'trans_man' || activeMode === 'masc';
+  if (takenText) takenText.textContent = isMasc ? 'Сегодня был укол / принял таблетку' : 'Сегодня был укол / приняла таблетку';
+  
+  if (!startDate) {
+    if (daysEl) daysEl.textContent = '—';
+    if (subEl) subEl.textContent = 'Укажи дату начала — и мы будем поддерживать тебя каждый день.';
+    if (setBtn) setBtn.textContent = 'Указать дату';
+    if (takenRow) takenRow.style.display = 'none';
+    return;
+  }
+  
+  const start = new Date(startDate + 'T00:00:00');
+  const now = new Date();
+  const days = Math.max(1, Math.floor((now - start) / 86400000) + 1);
+  
+  animateCountUp(daysEl, days);
+  if (subEl) subEl.textContent = 'Ты делаешь это для себя. Продолжай в своём темпе.';
+  if (setBtn) setBtn.textContent = 'Изменить';
+  if (takenRow) takenRow.style.display = 'flex';
+  
+  await checkTodayHrtLog(takenCheck);
+}
+
+async function checkTodayHrtLog(el) {
+  if (!currentUser || !el) return;
+  const today = new Date().toISOString().split('T')[0];
+  try {
+    const snap = await getDoc(doc(db, 'users', currentUser.uid, 'hrtLogs', today));
+    el.classList.toggle('checked', snap.exists() && snap.data().taken === true);
+  } catch (e) { console.error('hrtLog check:', e); }
+}
+
+$('#hrtSetDateBtn').addEventListener('click', () => {
+  if (!userData) return;
+  const startDate = userData.profile?.hrtStartDate;
+  const input = $('#hrtDateInput');
+  if (startDate) input.value = startDate;
+  else input.value = new Date().toISOString().split('T')[0];
+  input.max = new Date().toISOString().split('T')[0];
+  openModal('hrtDateModal');
+});
+
+$('#hrtDateSaveBtn').addEventListener('click', async () => {
+  const dateVal = $('#hrtDateInput').value;
+  if (!dateVal) { showToast('Выбери дату'); return; }
+  try {
+    await updateDoc(doc(db, 'users', currentUser.uid), { 'profile.hrtStartDate': dateVal });
+    if (!userData.profile) userData.profile = {};
+    userData.profile.hrtStartDate = dateVal;
+    closeModal('hrtDateModal');
+    updateHrtWidget();
+    showToast('Дата сохранена ✨');
+    confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 }, colors: ['#8b5cf6', '#d946ef', '#10b981'] });
+  } catch (e) { showToast('Ошибка: ' + e.message); }
+});
+
+$('#hrtTakenRow').addEventListener('click', async (e) => {
+  e.preventDefault();
+  if (!currentUser) return;
+  const today = new Date().toISOString().split('T')[0];
+  const checkEl = $('#hrtTakenCheck');
+  const isChecked = checkEl.classList.contains('checked');
+  try {
+    if (isChecked) {
+      await deleteDoc(doc(db, 'users', currentUser.uid, 'hrtLogs', today));
+      checkEl.classList.remove('checked');
+    } else {
+      await setDoc(doc(db, 'users', currentUser.uid, 'hrtLogs', today), { taken: true, date: today, createdAt: serverTimestamp() });
+      checkEl.classList.add('checked');
+      confetti({ particleCount: 40, spread: 50, origin: { y: 0.7 }, colors: ['#8b5cf6', '#d946ef', '#10b981'] });
+    }
+  } catch (err) { showToast('Ошибка: ' + err.message); }
+});
+
+/* ================= FTM VOICE PROGRESS ================= */
+function updateVoiceProgressVisibility() {
+  const el = $('#voiceProgressWidget');
+  if (!el) return;
+  el.classList.toggle('visible', activeMode === 'masc');
+  if (activeMode === 'masc') {
+    requestAnimationFrame(() => drawVoiceProgress(lastSessionsCache));
+  }
+}
+
+function drawVoiceProgress(sessions) {
+  const canvas = $('#voiceProgressCanvas');
+  if (!canvas) return;
+  const container = canvas.parentElement;
+  const rect = container.getBoundingClientRect();
+  if (!rect.width) return;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = rect.height + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const w = rect.width, h = rect.height;
+  ctx.clearRect(0, 0, w, h);
+  
+  const hintEl = $('#vpHint');
+  const pts = (sessions || []).filter(s => s.averagePitch && s.date).map(s => ({ date: new Date(s.date), pitch: s.averagePitch })).sort((a,b) => a.date - b.date);
+  
+  if (pts.length < 2) {
+    if (hintEl) hintEl.textContent = 'Данные появятся после нескольких сохранённых сессий с определением среднего тона';
+    return;
+  }
+  if (hintEl) hintEl.textContent = '';
+  
+  const weeks = {};
+  pts.forEach(p => {
+    const d = p.date;
+    const onejan = new Date(d.getFullYear(), 0, 1);
+    const week = Math.ceil((((d - onejan) / 86400000) + onejan.getDay() + 1) / 7);
+    const key = `${d.getFullYear()}-W${String(week).padStart(2,'0')}`;
+    if (!weeks[key]) weeks[key] = { key, sum: 0, count: 0, date: d };
+    weeks[key].sum += p.pitch;
+    weeks[key].count++;
+  });
+  const weekArr = Object.values(weeks).map(wk => ({ ...wk, avg: wk.sum / wk.count })).sort((a,b) => a.date - b.date);
+  
+  const padL = 42, padR = 12, padT = 18, padB = 28;
+  const cw = w - padL - padR, ch = h - padT - padB;
+  
+  const minP = Math.min(...weekArr.map(wk => wk.avg)) - 10;
+  const maxP = Math.max(...weekArr.map(wk => wk.avg)) + 10;
+  
+  // Grid
+  ctx.strokeStyle = 'rgba(139,92,246,0.15)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = padT + (ch / 4) * i;
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
+    ctx.fillStyle = '#71717a';
+    ctx.font = '600 10px Manrope, system-ui, sans-serif';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    const val = Math.round(maxP - ((maxP - minP) / 4) * i);
+    ctx.fillText(val + '', padL - 6, y);
+  }
+  
+  const points = weekArr.map((wk, i) => ({
+    x: padL + (cw / Math.max(1, weekArr.length - 1)) * i,
+    y: padT + ch - ((wk.avg - minP) / Math.max(1, maxP - minP)) * ch
+  }));
+  
+  // Gradient area
+  const grad = ctx.createLinearGradient(0, padT, 0, padT + ch);
+  grad.addColorStop(0, 'rgba(139,92,246,0.3)');
+  grad.addColorStop(1, 'rgba(139,92,246,0)');
+  ctx.beginPath();
+  ctx.moveTo(points[0].x, padT + ch);
+  points.forEach(p => ctx.lineTo(p.x, p.y));
+  ctx.lineTo(points[points.length - 1].x, padT + ch);
+  ctx.closePath(); ctx.fillStyle = grad; ctx.fill();
+  
+  // Line
+  ctx.beginPath();
+  points.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+  ctx.strokeStyle = '#8b5cf6'; ctx.lineWidth = 2.5; ctx.lineJoin = 'round'; ctx.stroke();
+  
+  // Points
+  points.forEach(p => {
+    ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff'; ctx.fill();
+    ctx.strokeStyle = '#8b5cf6'; ctx.lineWidth = 2; ctx.stroke();
+  });
+  
+  // X labels
+  ctx.fillStyle = '#71717a';
+  ctx.font = '600 9px Manrope, system-ui, sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  const step = Math.max(1, Math.floor(weekArr.length / 5));
+  weekArr.forEach((wk, i) => {
+    if (i % step !== 0 && i !== weekArr.length - 1) return;
+    const label = wk.date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+    ctx.fillText(label, points[i].x, padT + ch + 8);
+  });
+}
+
+$('#exportDoctorBtn').addEventListener('click', async () => {
+  const chartCanvas = $('#voiceProgressCanvas');
+  if (!chartCanvas || chartCanvas.width < 10) { showToast('Недостаточно данных для отчёта'); return; }
+  if (typeof html2canvas === 'undefined') { showToast('Библиотека экспорта не загружена'); return; }
+  
+  const report = document.createElement('div');
+  report.style.cssText = 'position:fixed;left:-9999px;top:0;width:900px;background:#ffffff;padding:44px;font-family:Manrope,system-ui,sans-serif;color:#18181b;box-sizing:border-box;';
+  const nick = (userData?.profile?.nickname || 'Пользователь');
+  const startDate = userData?.profile?.hrtStartDate;
+  const daysOnHrt = startDate ? Math.max(1, Math.floor((Date.now() - new Date(startDate + 'T00:00:00')) / 86400000) + 1) : null;
+  
+  report.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;padding-bottom:20px;border-bottom:2px solid #e4e4e7;">
+      <div>
+        <div style="font-size:32px;font-weight:800;color:#8b5cf6;letter-spacing:-1px;">✦ Отклик</div>
+        <div style="font-size:13px;color:#71717a;margin-top:4px;font-weight:600;">Дневник динамики голоса</div>
+      </div>
+      <div style="text-align:right;font-size:13px;color:#71717a;line-height:1.6;">
+        <div><b style="color:#18181b;">${nick}</b></div>
+        ${daysOnHrt ? `<div>День ${daysOnHrt} на ЗГТ</div>` : ''}
+        <div>${new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+      </div>
+    </div>
+    <h2 style="font-size:17px;margin:0 0 8px;color:#18181b;">Средний тон голоса по неделям</h2>
+    <p style="font-size:12px;color:#71717a;margin:0 0 20px;">Ниже 130 Гц — мужской диапазон, 130–180 Гц — андрогинный, выше 180 Гц — женский.</p>
+    <img src="${chartCanvas.toDataURL('image/png')}" style="width:100%;border-radius:16px;border:1px solid #e4e4e7;background:#fafafa;" />
+    <div style="margin-top:28px;font-size:11px;color:#71717a;text-align:center;padding-top:20px;border-top:1px solid #e4e4e7;line-height:1.6;">
+      Сгенерировано в приложении Отклик · 100% приватно · голос не уходит на сервер
+    </div>
+  `;
+  document.body.appendChild(report);
+  try {
+    const rendered = await html2canvas(report, { scale: 2, backgroundColor: '#ffffff', logging: false });
+    const link = document.createElement('a');
+    link.download = `otklik-voice-report-${new Date().toISOString().split('T')[0]}.png`;
+    link.href = rendered.toDataURL('image/png');
+    link.click();
+    showToast('Отчёт сохранён 📄');
+  } catch (e) {
+    showToast('Ошибка экспорта: ' + e.message);
+  } finally {
+    report.remove();
+  }
+});
+
+/* ================= PROGRAMS ================= */
+function renderPrograms() {
+  const grid = $('#programsGrid');
+  if (!grid) return;
+  grid.innerHTML = PROGRAMS.map(p => `
+    <button class="program-card ${p.premium ? 'premium' : ''}" data-program="${p.id}">
+      <div class="program-icon">${p.icon}</div>
+      <div class="program-title">${escapeHtml(p.title)}</div>
+      <div class="program-desc">${escapeHtml(p.desc)}</div>
+      <div class="program-meta">${escapeHtml(p.meta)}</div>
+    </button>
+  `).join('');
+}
+
+$('#programsGrid').addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-program]');
+  if (!btn) return;
+  const prog = PROGRAMS.find(p => p.id === btn.dataset.program);
+  if (!prog) return;
+  if (prog.premium) { openModal('closerModal'); return; }
+  if (prog.free) openFreeProgram();
+});
+
+function openFreeProgram() {
+  const host = $('#freeProgramDays');
+  if (!host) return;
+  host.innerHTML = FREE_PROGRAM_DAYS.map((d, i) => `
+    <div class="free-program-day" data-day="${i}">
+      <div class="fpd-title"><span>${escapeHtml(d.title)}</span><span class="fpd-chevron">▾</span></div>
+      <div class="fpd-text">${escapeHtml(d.text)}</div>
+    </div>
+  `).join('');
+  openModal('freeProgramModal');
+}
+
+$('#freeProgramDays').addEventListener('click', (e) => {
+  const day = e.target.closest('[data-day]');
+  if (!day) return;
+  day.classList.toggle('open');
+});
+
+function updateStreakCard() {
+  if (!userData) return;
+  const streak = userData.streak || 0;
+  const today = new Date().toISOString().split('T')[0];
+  const practicedToday = userData.lastPracticeDate === today;
+  const card = $('#streakCard'); if (!card) return;
+  card.classList.toggle('lit', practicedToday); card.classList.toggle('unlit', !practicedToday);
+  const v = $('#streakValue'); if (v) v.textContent = streak;
+  const p = $('#streakProgress'); if (p) p.style.width = `${Math.min(100, (streak % 7) / 7 * 100)}%`;
+  const h = $('#streakHint'); if (h) h.textContent = streak ? `${streak} ${pluralize(streak, ['день','дня','дней'])} подряд` : 'Начни практику';
+}
+
+function setupRealtimeListeners() {
+  const uid = currentUser.uid;
+  if (unsubscribeSessions) unsubscribeSessions();
+  const qSessions = query(collection(db, 'users', uid, 'sessions'), orderBy('createdAt', 'desc'), limit(20));
+  unsubscribeSessions = onSnapshot(qSessions, (snap) => {
+    const sessions = []; snap.forEach(d => sessions.push({ id: d.id, ...d.data() }));
+    lastSessionsCache = sessions;
+    renderStats(sessions); renderRecent(sessions); updateStreakCard();
+    if (activeMode === 'masc') drawVoiceProgress(sessions);
+  }, (err) => console.error('sessions listener:', err));
+}
+
+function setupCommunityListener() {
+  if (unsubscribeCommunity) unsubscribeCommunity();
+  const qPosts = query(collection(db, 'community_posts'), orderBy('createdAt', 'desc'), limit(40));
+  unsubscribeCommunity = onSnapshot(qPosts, (snap) => {
+    const posts = []; snap.forEach(d => posts.push({ id: d.id, ...d.data() }));
+    renderCommunity(posts);
+  }, (err) => { console.error('community listener:', err); const host = $('#communityList'); if (host) host.innerHTML = '<div class="card empty">Не удалось загрузить ленту.</div>'; });
+}
+
+function setupSupportListener() {
+  if (!currentUser) return;
+  if (unsubscribeSupport) unsubscribeSupport();
+  const uid = currentUser.uid;
+  lastSeenSupportTime = parseInt(localStorage.getItem(`otklik_support_seen_${uid}`) || '0', 10);
+  const q = query(collection(db, 'support', uid, 'messages'), orderBy('createdAt', 'asc'));
+  unsubscribeSupport = onSnapshot(q, (snap) => {
+    supportMessages = [];
+    snap.forEach(d => supportMessages.push({ id: d.id, ...d.data() }));
+    if (supportChatOpen) {
+      supportMessages.forEach(m => {
+        const ts = m.createdAt?.toMillis?.() || 0;
+        if (ts > lastSeenSupportTime) lastSeenSupportTime = ts;
+      });
+      localStorage.setItem(`otklik_support_seen_${uid}`, String(lastSeenSupportTime));
+      renderSupportMessages();
+    }
+    updateUnreadIndicator();
+  }, (err) => console.error('support:', err));
+}
+
+function updateUnreadIndicator() {
+  let unread = 0;
+  if (!supportChatOpen) {
+    supportMessages.forEach(m => {
+      if (m.from === 'owner') {
+        const ts = m.createdAt?.toMillis?.() || 0;
+        if (ts > lastSeenSupportTime) unread++;
+      }
+    });
+  }
+  const av = $('#avatarUnreadDot'); if (av) av.style.display = unread > 0 ? 'block' : 'none';
+  const sb = $('#supportUnreadDot'); if (sb) sb.style.display = unread > 0 ? 'block' : 'none';
+}
+
+function renderCommunity(posts) {
+  const host = $('#communityList'), meta = $('#communityMeta');
+  if (!host) return;
+  if (meta) meta.textContent = posts.length ? `${posts.length} ${pluralize(posts.length, ['пост', 'поста', 'постов'])}` : 'Пока тихо';
+  if (!posts.length) { host.innerHTML = '<div class="card empty">Пока нет постов. Стань первой, кто поделится поддержкой 💚</div>'; return; }
+  host.innerHTML = posts.map(p => {
+    const isMine = currentUser && p.uid === currentUser.uid;
+    const date = p.createdAt?.toDate ? p.createdAt.toDate() : null;
+    const dateStr = date ? formatRelativeTime(date) : '…';
+    return `
+      <article class="community-post" data-id="${p.id}">
+        <div class="community-post-head">
+          <div class="community-post-avatar">${escapeHtml(p.avatar || '✦')}</div>
+          <div class="community-post-meta"><strong>${escapeHtml(p.nickname || 'Аноним')}</strong><span>${dateStr}</span></div>
+          ${isMine ? '<button class="community-post-delete" data-delete-id="' + p.id + '" aria-label="Удалить">✕</button>' : ''}
+        </div>
+        <div class="community-post-text">${escapeHtml(p.text)}</div>
+      </article>
+    `;
+  }).join('');
+}
+
+function pluralize(n, forms) { const m10 = n % 10, m100 = n % 100; if (m10 === 1 && m100 !== 11) return forms[0]; if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return forms[1]; return forms[2]; }
+function formatRelativeTime(date) { const diff = (Date.now() - date.getTime()) / 1000; if (diff < 60) return 'только что'; if (diff < 3600) return `${Math.floor(diff / 60)} мин назад`; if (diff < 86400) return `${Math.floor(diff / 3600)} ч назад`; if (diff < 604800) return `${Math.floor(diff / 86400)} дн назад`; return date.toLocaleDateString(); }
+function escapeHtml(str) { return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function formatDateLabel(date) {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const diff = (today - d) / 86400000;
+  if (diff === 0) return 'Сегодня';
+  if (diff === 1) return 'Вчера';
+  if (diff < 7) return date.toLocaleDateString('ru-RU', { weekday: 'long' });
+  return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+}
+
+function updateSupportStatus() {
+  const hour = new Date().getHours();
+  const online = hour >= 8 && hour < 22;
+  const statusEl = $('#supportStatus');
+  const dotEl = $('#supportOnlineDot');
+  const bannerEl = $('#supportHoursBanner');
+  if (statusEl) { statusEl.textContent = online ? 'в сети' : 'не в сети'; statusEl.classList.toggle('online', online); }
+  if (dotEl) { dotEl.classList.toggle('online', online); }
+  if (bannerEl) {
+    if (online) { bannerEl.textContent = '✨ Клик на связи — ответим в течение дня'; bannerEl.classList.remove('offline'); }
+    else { bannerEl.textContent = '🌙 Сейчас нерабочее время. Ответим с 8:00 утра'; bannerEl.classList.add('offline'); }
+  }
+}
+
+function renderWelcomeBubble() {
+  const hour = new Date().getHours();
+  const online = hour >= 8 && hour < 22;
+  return `
+    <div class="chat-welcome">
+      <div class="chat-bubble-wrap owner">
+        <div class="chat-bubble owner">
+          <div class="chat-bubble-text">Привет! Я Клик — помощник поддержки Отклика. Готова помочь и ответить на любые вопросы 💜</div>
+        </div>
+      </div>
+      ${!online ? '<div class="chat-system-msg">🌙 Сейчас нерабочее время. Клик ответит, как только проснётся — с 8:00 утра.</div>' : ''}
+    </div>
+  `;
+}
+
+function renderSupportBubble(m, isNew) {
+  const isOwner = m.from === 'owner';
+  const time = m.createdAt?.toDate?.();
+  const timeStr = time ? time.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '';
+  const reactions = m.reactions || {};
+  const reactionHtml = Object.entries(reactions).filter(([e, arr]) => arr && arr.length).map(([e, arr]) =>
+    `<button class="chat-reaction" data-msg="${m.id}" data-emoji="${e}">${e} ${arr.length}</button>`
+  ).join('');
+  const replyHtml = m.replyTo ? `<div class="chat-reply-quote"><b>${escapeHtml(m.replyTo.from === 'owner' ? 'Клик' : 'Вы')}</b> ${escapeHtml(m.replyTo.text)}</div>` : '';
+  return `
+    <div class="chat-bubble-wrap ${isOwner ? 'owner' : 'user'} ${isNew ? 'bubble-new' : ''}" data-id="${m.id}">
+      ${replyHtml}
+      <div class="chat-bubble ${isOwner ? 'owner' : 'user'}">
+        <div class="chat-bubble-text">${escapeHtml(m.text)}</div>
+        <div class="chat-bubble-time">${timeStr}</div>
+      </div>
+      <div class="chat-bubble-actions">
+        <button class="chat-action-btn" data-reply="${m.id}" title="Ответить">↩</button>
+        <button class="chat-action-btn" data-react="${m.id}" title="Реакция">😊</button>
+      </div>
+      ${reactionHtml ? `<div class="chat-reactions">${reactionHtml}</div>` : ''}
+    </div>
+  `;
+}
+
+function renderSupportMessages() {
+  const host = $('#chatMessages');
+  if (!host) return;
+  const existingIds = new Set([...host.children].map(c => c.dataset.id).filter(Boolean));
+  const items = [];
+  items.push({ type: 'welcome' });
+  let lastDate = null;
+  supportMessages.forEach(m => {
+    const date = m.createdAt?.toDate?.() || new Date();
+    const dateKey = date.toDateString();
+    if (dateKey !== lastDate) {
+      items.push({ type: 'date', date });
+      lastDate = dateKey;
+    }
+    items.push({ type: 'msg', msg: m });
+  });
+  const animate = supportFirstRender;
+  supportFirstRender = false;
+  host.innerHTML = items.map(item => {
+    if (item.type === 'welcome') return renderWelcomeBubble();
+    if (item.type === 'date') return `<div class="chat-date-divider"><span>${formatDateLabel(item.date)}</span></div>`;
+    const isNew = animate || !existingIds.has(item.msg.id);
+    return renderSupportBubble(item.msg, isNew);
+  }).join('');
+  host.scrollTop = host.scrollHeight;
+}
+
+$('#chatMessages').addEventListener('click', (e) => {
+  const replyBtn = e.target.closest('[data-reply]');
+  if (replyBtn) { startReply(replyBtn.dataset.reply); return; }
+  const reactBtn = e.target.closest('[data-react]');
+  if (reactBtn) { showReactionPicker(reactBtn); return; }
+  const reactionBtn = e.target.closest('.chat-reaction');
+  if (reactionBtn) { toggleReaction(reactionBtn.dataset.msg, reactionBtn.dataset.emoji); return; }
+});
+
+function startReply(msgId) {
+  const msg = supportMessages.find(m => m.id === msgId);
+  if (!msg) return;
+  replyingTo = { id: msgId, text: msg.text.slice(0, 80), from: msg.from };
+  $('#chatReplyName').textContent = msg.from === 'owner' ? 'Клик' : 'Вы';
+  $('#chatReplyText').textContent = replyingTo.text;
+  $('#chatReplyPreview').style.display = 'flex';
+  $('#chatInput').focus();
+}
+
+$('#chatReplyCancel').addEventListener('click', () => {
+  replyingTo = null;
+  $('#chatReplyPreview').style.display = 'none';
+});
+
+function showReactionPicker(btn) {
+  document.querySelectorAll('.reaction-picker').forEach(p => p.remove());
+  const picker = document.createElement('div');
+  picker.className = 'reaction-picker';
+  picker.innerHTML = ['❤️','👍','😊','🙏','✨','🎉'].map(e => `<button data-emoji="${e}">${e}</button>`).join('');
+  document.body.appendChild(picker);
+  const rect = btn.getBoundingClientRect();
+  picker.style.left = Math.max(8, Math.min(window.innerWidth - 230, rect.left - 60)) + 'px';
+  picker.style.top = (rect.top - 50) + 'px';
+  const msgId = btn.dataset.react;
+  picker.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+    toggleReaction(msgId, b.dataset.emoji);
+    picker.remove();
+  }));
+  setTimeout(() => {
+    const close = (ev) => { if (!picker.contains(ev.target)) { picker.remove(); document.removeEventListener('click', close); } };
+    document.addEventListener('click', close);
+  }, 10);
+}
+
+async function toggleReaction(msgId, emoji) {
+  if (!currentUser) return;
+  const uid = currentUser.uid;
+  const msg = supportMessages.find(m => m.id === msgId);
+  if (!msg) return;
+  const reactions = msg.reactions || {};
+  const arr = reactions[emoji] || [];
+  const field = `reactions.${emoji}`;
+  try {
+    if (arr.includes(uid)) {
+      await updateDoc(doc(db, 'support', uid, 'messages', msgId), { [field]: arrayRemove(uid) });
+    } else {
+      await updateDoc(doc(db, 'support', uid, 'messages', msgId), { [field]: arrayUnion(uid) });
+    }
+  } catch (e) { showToast('Ошибка: ' + e.message); }
+}
+
+$('#communityList').addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-delete-id]'); if (!btn || !currentUser) return;
+  if (!confirm('Удалить этот пост?')) return;
+  try { await deleteDoc(doc(db, 'community_posts', btn.dataset.deleteId)); showToast('Пост удалён'); } catch (err) { showToast('Не удалось удалить'); }
+});
+
+const communityTextEl = $('#communityText');
+communityTextEl.addEventListener('input', () => { $('#communityCount').textContent = communityTextEl.value.length; });
+
+$('#communityForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!currentUser || !userData) return;
+  const text = communityTextEl.value.trim();
+  if (!text || text.length > 280) return showToast('Проверь длину поста');
+  const btn = $('#communitySubmitBtn'); btn.disabled = true;
+  try {
+    await addDoc(collection(db, 'community_posts'), { uid: currentUser.uid, nickname: userData.profile.nickname, avatar: userData.profile.avatar || '✦', text, createdAt: serverTimestamp() });
+    communityTextEl.value = ''; $('#communityCount').textContent = '0'; showToast('Спасибо, что делишься 💚');
+    confetti({ particleCount: 60, spread: 50, origin: { y: 0.7 }, colors: ['#8b5cf6', '#d946ef', '#10b981'] });
+  } catch (err) { showToast('Ошибка: ' + err.message); } finally { btn.disabled = false; }
+});
+
+function switchMode(newMode, animate = true) {
+  if (newMode === activeMode) return;
+  const fromLow = targetLow, fromHigh = targetHigh;
+  activeMode = newMode;
+  const toLow = MODES[newMode].low, toHigh = MODES[newMode].high;
+  $$('.mode').forEach(m => m.classList.toggle('selected', m.dataset.mode === newMode));
+  localStorage.setItem('otklik_mode', newMode);
+  updateVoiceProgressVisibility();
+  updateHrtWidget();
+  if (!animate) {
+    targetLow = toLow; targetHigh = toHigh;
+    $('#targetLow').value = toLow; $('#targetHigh').value = toHigh;
+    $('#targetLegend').textContent = `Цель: ${toLow}–${toHigh} Гц`;
+    drawGraph();
+    return;
+  }
+  modeAnimating = true;
+  const start = performance.now(), duration = 650;
+  function step(now) {
+    const t = Math.min(1, (now - start) / duration);
+    const eased = t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3)/2;
+    targetLow = Math.round(fromLow + (toLow - fromLow) * eased);
+    targetHigh = Math.round(fromHigh + (toHigh - fromHigh) * eased);
+    $('#targetLegend').textContent = `Цель: ${targetLow}–${targetHigh} Гц`;
+    drawGraph();
+    if (t < 1) requestAnimationFrame(step);
+    else {
+      targetLow = toLow; targetHigh = toHigh;
+      $('#targetLow').value = toLow; $('#targetHigh').value = toHigh;
+      $('#targetLegend').textContent = `Цель: ${toLow}–${toHigh} Гц`;
+      drawGraph();
+      modeAnimating = false;
+    }
+  }
+  requestAnimationFrame(step);
+}
+
+$$('.mode').forEach(b => b.addEventListener('click', () => {
+  if (running) return showToast('Заверши тренировку');
+  switchMode(b.dataset.mode, true);
+}));
+
+let gmodeTimer = null; const gmodeToggle = $('#gmodeToggle'), gmodePanel = $('#gmodePanel');
+function closeGmodePanel(silent) { clearTimeout(gmodeTimer); gmodeTimer = null; gmodePanel.classList.remove('open'); gmodeToggle.classList.remove('open'); gmodeToggle.setAttribute('aria-expanded', 'false'); if (silent === 'attention') { gmodeToggle.classList.remove('attention'); void gmodeToggle.offsetWidth; gmodeToggle.classList.add('attention'); setTimeout(() => gmodeToggle.classList.remove('attention'), 1300); } }
+function openGmodePanel() { gmodePanel.classList.add('open'); gmodeToggle.classList.add('open'); gmodeToggle.setAttribute('aria-expanded', 'true'); clearTimeout(gmodeTimer); gmodeTimer = setTimeout(() => closeGmodePanel('attention'), 10000); }
+gmodeToggle.addEventListener('click', (e) => { e.stopPropagation(); if (gmodePanel.classList.contains('open')) closeGmodePanel(); else openGmodePanel(); });
+document.addEventListener('click', (e) => { if (!gmodePanel.classList.contains('open')) return; if (gmodePanel.contains(e.target) || gmodeToggle.contains(e.target)) return; closeGmodePanel(); });
+$$('.gmode').forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); graphStyle = b.dataset.graph; $$('.gmode').forEach(g => g.classList.toggle('active', g === b)); drawGraph(); closeGmodePanel(); }));
+
+$('#graphSettingsBtn').addEventListener('click', () => { const panel = $('#graphSettings'), btn = $('#graphSettingsBtn'); panel.classList.toggle('open'); btn.classList.toggle('open', panel.classList.contains('open')); });
+
+$('#lineThickness')?.addEventListener('input', (e) => {
+  lineThickness = parseFloat(e.target.value);
+  $('#lineThicknessValue').textContent = lineThickness.toFixed(1);
+  localStorage.setItem('lineThickness', lineThickness);
+  drawGraph();
+});
+$('#lineColor')?.addEventListener('input', (e) => {
+  lineColor = e.target.value;
+  $('#lineColorHex').textContent = lineColor;
+  localStorage.setItem('lineColor', lineColor);
+  drawGraph();
+});
+
+$('#targetLow').addEventListener('change', () => { const v = parseInt($('#targetLow').value, 10); if (isNaN(v) || v < 50 || v > 400 || v >= targetHigh) { $('#targetLow').value = targetLow; return; } targetLow = v; $('#targetLegend').textContent = `Цель: ${targetLow}–${targetHigh} Гц`; localStorage.setItem('targetLow', targetLow); drawGraph(); });
+$('#targetHigh').addEventListener('change', () => { const v = parseInt($('#targetHigh').value, 10); if (isNaN(v) || v < 50 || v > 400 || v <= targetLow) { $('#targetHigh').value = targetHigh; return; } targetHigh = v; $('#targetLegend').textContent = `Цель: ${targetLow}–${targetHigh} Гц`; localStorage.setItem('targetHigh', targetHigh); drawGraph(); });
+$('#showZones').addEventListener('change', (e) => { showZones = e.target.checked; $('#zoneLegend').style.display = showZones ? 'flex' : 'none'; localStorage.setItem('showZones', showZones ? '1' : '0'); drawGraph(); });
+$('#showTarget').addEventListener('change', (e) => { showTarget = e.target.checked; localStorage.setItem('showTarget', showTarget ? '1' : '0'); drawGraph(); });
+
+$('#resetZoneColors')?.addEventListener('click', () => {
+  zoneColors = { male: '#6495ED', andro: '#ffffff', female: '#ffa0be', target: '#10b981' };
+  Object.entries(zoneColorMap).forEach(([id, key]) => { const el = document.getElementById(id); if (el) el.value = zoneColors[key]; });
+  updateZoneLegendSwatches(); localStorage.setItem('zoneColors', JSON.stringify(zoneColors)); drawGraph();
+  showToast('Цвета зон сброшены');
+});
+
+function hexToRgb(hex) { const r = parseInt(hex.slice(1,3), 16), g = parseInt(hex.slice(3,5), 16), b = parseInt(hex.slice(5,7), 16); return { r, g, b }; }
+function hexToRgba(hex, alpha) { const { r, g, b } = hexToRgb(hex); return `rgba(${r},${g},${b},${alpha})`; }
+function zoneFillColor(hex) { const { r, g, b } = hexToRgb(hex); const brightness = (r + g + b) / 3; const alpha = brightness > 240 ? 0.02 : 0.18; return `rgba(${r},${g},${b},${alpha})`; }
+function zoneBorderColor(hex) { const { r, g, b } = hexToRgb(hex); const brightness = (r + g + b) / 3; if (brightness > 240) return 'rgba(128,128,128,0.35)'; return `rgba(${r},${g},${b},0.6)`; }
+
+const zoneColorMap = { colorMale: 'male', colorAndro: 'andro', colorFemale: 'female', colorTarget: 'target' };
+Object.entries(zoneColorMap).forEach(([inputId, key]) => {
+  const input = document.getElementById(inputId); if (!input) return;
+  input.value = zoneColors[key];
+  input.addEventListener('input', () => { zoneColors[key] = input.value; localStorage.setItem('zoneColors', JSON.stringify(zoneColors)); updateZoneLegendSwatches(); drawGraph(); });
+});
+function updateZoneLegendSwatches() { const dots = $$('#zoneLegend .zone-dot'); if (dots.length >= 3) { dots[0].style.background = zoneColors.male; dots[1].style.background = zoneColors.andro; dots[2].style.background = zoneColors.female; } }
+
+function restoreGraphSettings() {
+  const lt = parseFloat(localStorage.getItem('lineThickness'));
+  if (!isNaN(lt) && lt >= 1 && lt <= 8) { lineThickness = lt; if ($('#lineThickness')) $('#lineThickness').value = lt; if ($('#lineThicknessValue')) $('#lineThicknessValue').textContent = lt.toFixed(1); }
+  const lc = localStorage.getItem('lineColor');
+  if (lc && /^#[0-9a-f]{6}$/i.test(lc)) { lineColor = lc; if ($('#lineColor')) $('#lineColor').value = lc; if ($('#lineColorHex')) $('#lineColorHex').textContent = lc; }
+  const low = parseInt(localStorage.getItem('targetLow'), 10), high = parseInt(localStorage.getItem('targetHigh'), 10);
+  if (!isNaN(low) && !isNaN(high) && low < high && low >= 50 && high <= 400) { targetLow = low; targetHigh = high; $('#targetLow').value = low; $('#targetHigh').value = high; }
+  if (localStorage.getItem('showZones') === '0') { showZones = false; $('#showZones').checked = false; $('#zoneLegend').style.display = 'none'; }
+  if (localStorage.getItem('showTarget') === '0') { showTarget = false; $('#showTarget').checked = false; }
+  const zc = localStorage.getItem('zoneColors');
+  if (zc) { try { const parsed = JSON.parse(zc); Object.keys(zoneColors).forEach(k => { if (typeof parsed[k] === 'string' && /^#[0-9a-f]{6}$/i.test(parsed[k])) zoneColors[k] = parsed[k]; }); Object.entries(zoneColorMap).forEach(([id, key]) => { const el = document.getElementById(id); if (el) el.value = zoneColors[key]; }); updateZoneLegendSwatches(); } catch(e){} }
+}
+
+function restoreRemindersSettings() {
+  waterReminderEnabled = localStorage.getItem('waterReminder') === '1'; restReminderEnabled = localStorage.getItem('restReminder') === '1';
+  const wi = parseInt(localStorage.getItem('waterInterval'), 10), ri = parseInt(localStorage.getItem('restInterval'), 10);
+  if (!isNaN(wi) && wi >= 3 && wi <= 60) waterInterval = wi;
+  if (!isNaN(ri) && ri >= 3 && ri <= 60) restInterval = ri;
+  if ($('#waterToggle')) $('#waterToggle').checked = waterReminderEnabled;
+  if ($('#restToggle')) $('#restToggle').checked = restReminderEnabled;
+  if ($('#waterInterval')) { $('#waterInterval').value = waterInterval; $('#waterInterval').disabled = !waterReminderEnabled; }
+  if ($('#restInterval')) { $('#restInterval').value = restInterval; $('#restInterval').disabled = !restReminderEnabled; }
+}
+
+$('#waterToggle')?.addEventListener('change', () => { waterReminderEnabled = $('#waterToggle').checked; localStorage.setItem('waterReminder', waterReminderEnabled ? '1' : '0'); $('#waterInterval').disabled = !waterReminderEnabled; if (running) { stopReminderTimers(); startReminderTimers(); } });
+$('#waterInterval')?.addEventListener('change', () => { const v = parseInt($('#waterInterval').value, 10); if (isNaN(v) || v < 3 || v > 60) { $('#waterInterval').value = waterInterval; return; } waterInterval = v; localStorage.setItem('waterInterval', waterInterval); if (running && waterReminderEnabled) { stopReminderTimers(); startReminderTimers(); } });
+$('#restToggle')?.addEventListener('change', () => { restReminderEnabled = $('#restToggle').checked; localStorage.setItem('restReminder', restReminderEnabled ? '1' : '0'); $('#restInterval').disabled = !restReminderEnabled; if (running) { stopReminderTimers(); startReminderTimers(); } });
+$('#restInterval')?.addEventListener('change', () => { const v = parseInt($('#restInterval').value, 10); if (isNaN(v) || v < 3 || v > 60) { $('#restInterval').value = restInterval; return; } restInterval = v; localStorage.setItem('restInterval', restInterval); if (running && restReminderEnabled) { stopReminderTimers(); startReminderTimers(); } });
+
+function startReminderTimers() { stopReminderTimers(); if (waterReminderEnabled) waterTimer = setInterval(() => showToast('💧 Пора попить воды'), waterInterval * 60 * 1000); if (restReminderEnabled) restTimer = setInterval(() => showToast('😌 Сделай короткий перерыв для связок'), restInterval * 60 * 1000); }
+function stopReminderTimers() { if (waterTimer) clearInterval(waterTimer); if (restTimer) clearInterval(restTimer); waterTimer = null; restTimer = null; }
+
+function resizeCanvas(){ if (!canvas) return; const rect = canvas.getBoundingClientRect(); if (!rect.width || !rect.height) return; const dpr = Math.min(window.devicePixelRatio || 1, 2); canvas.width = Math.max(1, Math.round(rect.width * dpr)); canvas.height = Math.max(1, Math.round(rect.height * dpr)); canvasCtx.setTransform(dpr, 0, 0, dpr, 0, 0); drawGraph(); updateHzLabels(); }
+function yForHz(hz, h) { const range = Math.max(1, scaleMax - scaleMin); const clamped = Math.max(scaleMin, Math.min(scaleMax, hz)); return h - ((clamped - scaleMin) / range) * h; }
+function updateHzLabels() { const h = canvas.clientHeight; if (!h) return; $$('.hz-label').forEach(label => { const hz = parseFloat(label.dataset.hz); if (hz < scaleMin - 5 || hz > scaleMax + 5) label.style.opacity = '0'; else { label.style.opacity = '1'; label.style.top = yForHz(hz, h) + 'px'; } }); }
+function interpolateGaps(data, maxGap) { const result = data.map(p => ({ t: p.t, v: p.v })); let i = 0; while (i < result.length) { if (result[i].v == null) { let j = i; while (j < result.length && result[j].v == null) j++; const gapLen = j - i; if (i > 0 && j < result.length && gapLen <= maxGap) { const v1 = result[i-1].v, v2 = result[j].v, t1 = result[i-1].t, t2 = result[j].t, span = t2 - t1 || 1; for (let k = i; k < j; k++) result[k].v = v1 + (v2 - v1) * ((result[k].t - t1) / span); } i = j; } else i++; } return result; }
+function getSegments(points) { const segments = []; let current = []; for (const p of points) { if (p.y == null) { if (current.length > 0) { segments.push(current); current = []; } } else current.push(p); } if (current.length > 0) segments.push(current); return segments; }
+function strokeSmoothPath(ctx, seg) { if (seg.length < 2) { if (seg.length === 1) { ctx.beginPath(); ctx.arc(seg[0].x, seg[0].y, ctx.lineWidth / 1.6, 0, Math.PI*2); ctx.fillStyle = ctx.strokeStyle; ctx.fill(); } return; } ctx.beginPath(); ctx.moveTo(seg[0].x, seg[0].y); for (let i = 1; i < seg.length - 1; i++) { const xc = (seg[i].x + seg[i+1].x) / 2, yc = (seg[i].y + seg[i+1].y) / 2; ctx.quadraticCurveTo(seg[i].x, seg[i].y, xc, yc); } const last = seg[seg.length - 1]; ctx.lineTo(last.x, last.y); ctx.stroke(); }
+function fillSmoothArea(ctx, seg, h, baseColor) { if (seg.length < 2) return; ctx.beginPath(); ctx.moveTo(seg[0].x, seg[0].y); for (let i = 1; i < seg.length - 1; i++) { const xc = (seg[i].x + seg[i+1].x) / 2, yc = (seg[i].y + seg[i+1].y) / 2; ctx.quadraticCurveTo(seg[i].x, seg[i].y, xc, yc); } const last = seg[seg.length - 1]; ctx.lineTo(last.x, last.y); ctx.lineTo(last.x, h); ctx.lineTo(seg[0].x, h); ctx.closePath(); const grad = ctx.createLinearGradient(0, 0, 0, h); grad.addColorStop(0, hexToRgba(baseColor, 0.4)); grad.addColorStop(0.7, hexToRgba(baseColor, 0.12)); grad.addColorStop(1, hexToRgba(baseColor, 0)); ctx.fillStyle = grad; ctx.fill(); }
+
+function drawGraph(){
+  if (!canvasCtx) return;
+  const w = canvas.clientWidth, h = canvas.clientHeight; if (!w || !h) return;
+  canvasCtx.clearRect(0, 0, w, h);
+  const graphW = Math.max(1, w - LABEL_WIDTH);
+
+  if (showZones) {
+    const zones = [{ low: 65, high: 130, color: zoneColors.male, label: 'Мужской' }, { low: 130, high: 180, color: zoneColors.andro, label: 'Андро' }, { low: 180, high: 350, color: zoneColors.female, label: 'Женский' }];
+    zones.forEach(z => {
+      const zLow = Math.max(z.low, scaleMin), zHigh = Math.min(z.high, scaleMax); if (zHigh <= zLow) return;
+      const zTop = yForHz(zHigh, h), zBot = yForHz(zLow, h);
+      canvasCtx.fillStyle = zoneFillColor(z.color); canvasCtx.fillRect(0, zTop, graphW, zBot - zTop);
+      canvasCtx.strokeStyle = zoneBorderColor(z.color); canvasCtx.lineWidth = 1; canvasCtx.setLineDash([3, 3]);
+      canvasCtx.beginPath(); canvasCtx.moveTo(0, zTop); canvasCtx.lineTo(graphW, zTop); canvasCtx.moveTo(0, zBot); canvasCtx.lineTo(graphW, zBot); canvasCtx.stroke(); canvasCtx.setLineDash([]);
+      const topHz = Math.min(z.high, scaleMax);
+      const labelY = yForHz(topHz, h);
+      canvasCtx.font = '700 9.5px Manrope, system-ui, sans-serif'; canvasCtx.fillStyle = zoneBorderColor(z.color); canvasCtx.textAlign = 'left'; canvasCtx.textBaseline = 'top'; canvasCtx.fillText(z.label, 10, labelY + 4);
+    });
+  }
+
+  if (showTarget) {
+    const mode = currentMode(), top = yForHz(mode.high, h), bottom = yForHz(mode.low, h);
+    canvasCtx.fillStyle = zoneFillColor(zoneColors.target); canvasCtx.fillRect(0, top, graphW, Math.max(0, bottom - top));
+    canvasCtx.strokeStyle = zoneBorderColor(zoneColors.target); canvasCtx.lineWidth = 1.5; canvasCtx.setLineDash([4, 6]);
+    canvasCtx.beginPath(); canvasCtx.moveTo(0, top); canvasCtx.lineTo(graphW, top); canvasCtx.moveTo(0, bottom); canvasCtx.lineTo(graphW, bottom); canvasCtx.stroke(); canvasCtx.setLineDash([]);
+  }
+
+  const now = performance.now(), windowStart = now - HISTORY_WINDOW_MS, cutoff = now - HISTORY_WINDOW_MS * 1.6;
+  while (pitchHistory.length > 0 && pitchHistory[0].t < cutoff) pitchHistory.shift();
+  const visible = pitchHistory.filter(p => p.t >= windowStart), filled = interpolateGaps(visible, 8);
+  const points = filled.map(p => ({ x: ((p.t - windowStart) / HISTORY_WINDOW_MS) * graphW, y: p.v == null ? null : yForHz(p.v, h) }));
+  const segments = getSegments(points);
+  const lw = lineThickness, lc = lineColor;
+
+  if (graphStyle === 'line') {
+    canvasCtx.lineWidth = lw; canvasCtx.lineCap = 'round'; canvasCtx.lineJoin = 'round'; canvasCtx.strokeStyle = lc;
+    for (const seg of segments) strokeSmoothPath(canvasCtx, seg);
+  } else if (graphStyle === 'area') {
+    for (const seg of segments) fillSmoothArea(canvasCtx, seg, h, lc);
+    canvasCtx.lineWidth = lw; canvasCtx.lineCap = 'round'; canvasCtx.lineJoin = 'round'; canvasCtx.strokeStyle = lc;
+    for (const seg of segments) strokeSmoothPath(canvasCtx, seg);
+  } else if (graphStyle === 'glow') {
+    canvasCtx.save(); canvasCtx.shadowColor = lc; canvasCtx.shadowBlur = 14; canvasCtx.lineWidth = lw + 0.3; canvasCtx.lineCap = 'round'; canvasCtx.lineJoin = 'round'; canvasCtx.strokeStyle = lc;
+    for (const seg of segments) strokeSmoothPath(canvasCtx, seg); canvasCtx.restore();
+    canvasCtx.lineWidth = lw; canvasCtx.lineCap = 'round'; canvasCtx.lineJoin = 'round'; canvasCtx.strokeStyle = lc;
+    for (const seg of segments) strokeSmoothPath(canvasCtx, seg);
+  }
+}
+
+function rmsOf(buf){let s=0;for(let i=0;i<buf.length;i++)s+=buf[i]*buf[i];return Math.sqrt(s/buf.length)}
+function detectPitch(buf, sampleRate){
+  const rms = rmsOf(buf); if (rms < 0.010) return null;
+  let mean = 0; for (let i = 0; i < buf.length; i++) mean += buf[i]; mean /= buf.length;
+  const x = new Float32Array(buf.length); for (let i = 0; i < buf.length; i++) x[i] = buf[i] - mean;
+  const minHz = 65, maxHz = 350, minLag = Math.floor(sampleRate / maxHz), maxLag = Math.min(Math.floor(sampleRate / minHz), x.length - 2);
+  let bestLag = -1, bestCorr = 0; const correlations = new Float32Array(maxLag + 2);
+  for (let lag = minLag; lag <= maxLag; lag++) {
+    let cross = 0, left = 0, right = 0; const limit = x.length - lag;
+    for (let i = 0; i < limit; i++) { const a = x[i], b = x[i + lag]; cross += a * b; left += a * a; right += b * b; }
+    const corr = cross / Math.sqrt((left * right) || 1); correlations[lag] = corr;
+    if (corr > bestCorr) { bestCorr = corr; bestLag = lag; }
+  }
+  if (bestLag < 0 || bestCorr < 0.55) return null;
+  for (let lag = minLag + 1; lag < bestLag; lag++) { if (correlations[lag] > 0.88 && correlations[lag] >= correlations[lag-1] && correlations[lag] >= correlations[lag+1]) { bestLag = lag; bestCorr = correlations[lag]; break; } }
+  let shift = 0; const a = correlations[bestLag-1] || 0, b = correlations[bestLag] || 0, c = correlations[bestLag+1] || 0, denom = a - 2*b + c;
+  if (Math.abs(denom) > 1e-7) shift = Math.max(-0.5, Math.min(0.5, 0.5*(a - c)/denom));
+  const hz = sampleRate / (bestLag + shift); return hz >= minHz && hz <= maxHz ? { hz, confidence: bestCorr, rms } : null;
+}
+
+function computeResonance(byteFreqData, sampleRate, fftSize) {
+  let num = 0, den = 0; const binHz = sampleRate / fftSize;
+  for (let i = 2; i < byteFreqData.length; i++) { const freq = i * binHz; if (freq < 150 || freq > 4000) continue; const mag = byteFreqData[i]; num += freq * mag; den += mag; }
+  if (den < 1) return 0; const centroid = num / den; return Math.max(0, Math.min(1, (centroid - 700) / 1800));
+}
+
+function stopTracks(){ if(stream){stream.getTracks().forEach(t=>t.stop());stream=null} if(audioCtx){audioCtx.close().catch(()=>{});audioCtx=null} analyser=null; sourceNode=null; freqData=null; }
+
+function pushSample(now) { if (now - lastDisplaySample < SAMPLE_INTERVAL_MS) return; lastDisplaySample = now; pitchHistory.push({ t: now, v: smoothPitch }); if (pitchHistory.length > MAX_HISTORY_POINTS) pitchHistory.shift(); }
+function setMicStatus(on) { const el = $('#micStatus'), txt = $('#micText'); if (!el || !txt) return; el.classList.toggle('on', on); txt.textContent = on ? 'Мик вкл' : 'Мик выкл'; }
+
+function audioLoop(now){
+  if (!running) return;
+  analyser.getFloatTimeDomainData(audioBuffer); analyser.getByteFrequencyData(freqData);
+  const dt = Math.min(0.12, Math.max(0, (now - session.lastTick) / 1000)); session.lastTick = now; session.elapsed += dt;
+  const resonance = computeResonance(freqData, audioCtx.sampleRate, analyser.fftSize); session.resonanceSum += resonance; session.resonanceCount++;
+  const rFill = $('#resonanceFill'), rVal = $('#resonanceValue'); if (rFill) rFill.style.width = Math.round(resonance * 100) + '%'; if (rVal) rVal.textContent = Math.round(resonance * 100) + '%';
+  const detected = detectPitch(audioBuffer, audioCtx.sampleRate); const mode = currentMode();
+  if (detected) {
+    const hz = detected.hz;
+    if (smoothPitch == null) smoothPitch = hz; else { const delta = hz - smoothPitch; const alpha = Math.abs(delta) > 45 ? 0.08 : 0.15; smoothPitch += alpha * delta; }
+    lastValidAt = now; session.validDuration += dt; session.allPitches.push(smoothPitch);
+    const inTarget = smoothPitch >= mode.low && smoothPitch <= mode.high; if (inTarget) session.inTarget += dt;
+    const hzBadge = $('#hzBadge'); if (hzBadge) { hzBadge.textContent = `${Math.round(smoothPitch)} Hz`; hzBadge.style.color = inTarget ? 'var(--green)' : 'var(--text)'; }
+    const pq = $('#pitchQuality'); if (pq) pq.textContent = inTarget ? '· в цели' : '· вне цели';
+  } else {
+    if (now - lastValidAt > 500) { smoothPitch = null; const hzBadge = $('#hzBadge'); if (hzBadge) { hzBadge.textContent = '— Hz'; hzBadge.style.color = 'var(--text)'; } const pq = $('#pitchQuality'); if (pq) pq.textContent = '· ожидание'; }
+  }
+  pushSample(now);
+  $('#elapsedValue').textContent = fmtTime(session.elapsed); $('#inTargetValue').textContent = fmtTime(session.inTarget);
+  const avgEl = $('#avgPitchValue');
+  if (avgEl) { if (session.allPitches.length) { const avg = session.allPitches.reduce((a,b)=>a+b,0)/session.allPitches.length; avgEl.textContent = Math.round(avg); } else avgEl.textContent = '—'; }
+  if (now - lastFrameAt > 30) { drawGraph(); lastFrameAt = now; }
+  rafId = requestAnimationFrame(audioLoop);
+}
+
+async function startMic(){
+  if (running) return;
+  if (!navigator.mediaDevices?.getUserMedia) { showToast('Нужен HTTPS или localhost'); return; }
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)(); await audioCtx.resume();
+    sourceNode = audioCtx.createMediaStreamSource(stream); analyser = audioCtx.createAnalyser(); analyser.fftSize = 4096; analyser.smoothingTimeConstant = 0.8; sourceNode.connect(analyser);
+    audioBuffer = new Float32Array(analyser.fftSize); freqData = new Uint8Array(analyser.frequencyBinCount);
+    running = true; session = { startedAt: Date.now(), elapsed: 0, inTarget: 0, mode: activeMode, lastTick: performance.now(), allPitches: [], resonanceSum: 0, resonanceCount: 0, validDuration: 0 };
+    smoothPitch = null; lastValidAt = 0; lastFrameAt = performance.now(); lastDisplaySample = performance.now(); pitchHistory = [];
+    $('#micBtn').textContent = 'Ⅱ Остановить'; $('#finishBtn').style.display = 'flex'; $('#finishBtn').disabled = false; setMicStatus(true);
+    const ph = $('#graphPlaceholder'); if (ph) ph.classList.add('hidden');
+    const gw = $('#graphWrap'); if (gw) gw.classList.add('recording');
+    startReminderTimers(); rafId = requestAnimationFrame(audioLoop);
+  } catch (err) { showToast('Нет доступа к микрофону.'); stopTracks(); }
+}
+
+function stopMic(showResult = true){
+  if (!running || !session) return;
+  running = false; cancelAnimationFrame(rafId); stopTracks(); stopReminderTimers();
+  $('#micBtn').textContent = '🎙️ Начать тренировку'; $('#finishBtn').style.display = 'none'; $('#finishBtn').disabled = true; setMicStatus(false);
+  const ph = $('#graphPlaceholder'); if (ph) ph.classList.remove('hidden');
+  const gw = $('#graphWrap'); if (gw) gw.classList.remove('recording');
+  const avg = session.allPitches.length ? session.allPitches.reduce((a, b) => a + b, 0) / session.allPitches.length : null;
+  const avgRes = session.resonanceCount ? session.resonanceSum / session.resonanceCount : 0;
+  pendingSession = { date: new Date().toISOString(), mode: session.mode, duration: Math.round(session.elapsed), inTarget: Math.round(session.inTarget), averagePitch: avg == null ? null : Math.round(avg), averageResonance: Math.round(avgRes * 100) };
+  session = null; drawGraph();
+  
+  if (showResult && pendingSession.duration >= 2) {
+    $('#resultTarget').textContent = fmtShort(pendingSession.inTarget); $('#resultAverage').textContent = pendingSession.averagePitch ?? '—';
+    // HRT insight
+    const insightEl = $('#resultInsight');
+    const startDate = userData?.profile?.hrtStartDate;
+    if (startDate) {
+      const start = new Date(startDate + 'T00:00:00');
+      const days = Math.max(1, Math.floor((new Date() - start) / 86400000) + 1);
+      if (insightEl) {
+        insightEl.textContent = `Кстати, сегодня ${days}-й день твоей ЗГТ. Ты молодец, что продолжаешь тренироваться! 💜`;
+        insightEl.style.display = 'block';
+      }
+    } else if (insightEl) { insightEl.style.display = 'none'; }
+    openModal('resultModal'); confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 }, colors: ['#8b5cf6', '#d946ef', '#10b981'] });
+  } else pendingSession = null;
+}
+
+$('#micBtn').addEventListener('click', () => running ? stopMic(true) : startMic());
+$('#finishBtn').addEventListener('click', () => stopMic(true));
+
+$('#saveSessionBtn').addEventListener('click', async () => {
+  if (!pendingSession) return;
+  try {
+    await addDoc(collection(db, 'users', currentUser.uid, 'sessions'), { ...pendingSession, createdAt: serverTimestamp() });
+    const today = new Date().toISOString().split('T')[0], last = userData.lastPracticeDate;
+    let newStreak = userData.streak || 0;
+    if (last !== today) {
+      const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+      if (last === yesterday) newStreak++;
+      else newStreak = 1;
+      await updateDoc(doc(db, 'users', currentUser.uid), { streak: newStreak, lastPracticeDate: today });
+      userData.streak = newStreak;
+      userData.lastPracticeDate = today;
+    }
+    updateStreakCard();
+    closeModal('resultModal'); pendingSession = null; showToast('Сессия сохранена!');
+    confetti({ particleCount: 120, spread: 90, origin: { y: 0.5 }, colors: ['#10b981', '#8b5cf6', '#d946ef'] });
+  } catch (e) { showToast('Ошибка: ' + e.message); }
+});
+$('#discardSessionBtn').addEventListener('click', () => { closeModal('resultModal'); pendingSession = null; });
+
+function fmtTime(s){s=Math.max(0,Math.floor(s||0));return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`}
+function fmtShort(s){s=Math.max(0,Math.round(s||0));return s<60?`${s} сек`:`${Math.floor(s/60)} мин`}
+
+function renderStats(sessions) {
+  const totalTarget = sessions.reduce((a, s) => a + (s.inTarget || 0), 0);
+  $('#totalTarget').textContent = Math.round(totalTarget / 60); $('#totalSessions').textContent = `${sessions.length} сессий`;
+}
+
+function renderRecent(sessions) {
+  const host = $('#recentSessions'); if (!host) return;
+  if (!sessions.length) { host.innerHTML = '<div class="card empty">Пока нет сессий.</div>'; return; }
+  host.innerHTML = sessions.slice(0, 8).map(s => `
+    <article class="card session-item">
+      <div class="session-symbol">${MODES[s.mode]?.icon || '〰'}</div>
+      <div class="session-details"><strong>${MODES[s.mode]?.label || 'Тренировка'}</strong><span>${new Date(s.date).toLocaleDateString()} · ${fmtTime(s.duration)}</span></div>
+      <div class="session-score">${fmtShort(s.inTarget)}</div>
+    </article>
+  `).join('');
+}
+
+const PRACTICE_LIMIT = 2000, practiceTextEl = $('#practiceText');
+function updatePracticeCounter() { const len = practiceTextEl.textContent.length; const el = $('#practiceCount'); if (el) el.textContent = len; }
+function setPracticeText() { practiceTextEl.textContent = PRACTICE_TEXT; updatePracticeCounter(); }
+practiceTextEl.addEventListener('focus', () => { if (practiceTextEl.textContent.length === 0) return; requestAnimationFrame(() => { const range = document.createRange(); range.selectNodeContents(practiceTextEl); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); }); });
+practiceTextEl.addEventListener('input', () => { const text = practiceTextEl.textContent; if (text.length > PRACTICE_LIMIT) { practiceTextEl.textContent = text.slice(0, PRACTICE_LIMIT); const range = document.createRange(); range.selectNodeContents(practiceTextEl); range.collapse(false); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); showToast('Достигнут лимит символов'); } updatePracticeCounter(); });
+
+$('#settingsOpen').addEventListener('click', () => { $('#avatarPicker').classList.remove('open'); openModal('settingsModal'); });
+$('#settingsAvatar').addEventListener('click', () => { $('#avatarPicker').classList.toggle('open'); });
+
+function shatterEmoji(el) {
+  const emoji = el.textContent.trim(); if (!emoji) return;
+  const rect = el.getBoundingClientRect(), cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2, count = 16, baseSize = Math.min(rect.width, rect.height);
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('span'); p.textContent = emoji;
+    p.style.cssText = `position:fixed;left:${cx}px;top:${cy}px;font-size:${baseSize * 0.38}px;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);user-select:none;will-change:transform,opacity,filter;`;
+    document.body.appendChild(p);
+    const angle = (Math.PI * 2 * i / count) + (Math.random() - 0.5) * 0.6, dist = 40 + Math.random() * 55, dx = Math.cos(angle) * dist, dy = Math.sin(angle) * dist, rot = (Math.random() - 0.5) * 320, dur = 520 + Math.random() * 380;
+    p.animate([{ transform: 'translate(-50%,-50%) scale(1) rotate(0deg)', opacity: 1, filter: 'blur(0px)' }, { transform: `translate(calc(-50% + ${dx * 0.4}px), calc(-50% + ${dy * 0.4}px)) scale(0.85) rotate(${rot * 0.4}deg)`, opacity: 0.85, filter: 'blur(0.5px)', offset: 0.35 }, { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.15) rotate(${rot}deg)`, opacity: 0, filter: 'blur(2px)' }], { duration: dur, easing: 'cubic-bezier(0.22, 0.61, 0.36, 1)' }).onfinish = () => p.remove();
+  }
+}
+
+$('#settingsAvatarGrid').addEventListener('click', async (e) => {
+  const btn = e.target.closest('.avatar-opt'); if (!btn || !currentUser) return;
+  const newAvatar = btn.dataset.val, oldAvatar = userData.profile.avatar || '🦊';
+  if (newAvatar === oldAvatar) { $('#avatarPicker').classList.remove('open'); return; }
+  shatterEmoji($('#settingsAvatarText')); $('#settingsAvatarText').style.opacity = '0'; $('#avatarPicker').classList.remove('open');
+  try {
+    await updateDoc(doc(db, 'users', currentUser.uid), { 'profile.avatar': newAvatar });
+    userData.profile.avatar = newAvatar;
+    $$('#settingsAvatarGrid .avatar-opt').forEach(b => b.classList.toggle('selected', b.dataset.val === newAvatar));
+    setTimeout(() => { $('#settingsAvatarText').textContent = newAvatar; $('#settingsAvatarText').style.opacity = '1'; $('#settingsAvatar').classList.remove('pop-in'); void $('#settingsAvatar').offsetWidth; $('#settingsAvatar').classList.add('pop-in'); $('#mainAvatarEmoji').textContent = newAvatar; showToast('Аватар обновлён'); }, 200);
+  } catch (err) { $('#settingsAvatarText').textContent = oldAvatar; $('#settingsAvatarText').style.opacity = '1'; showToast('Ошибка: ' + err.message); }
+});
+
+$('#settingsNickname').addEventListener('change', async () => {
+  if (!currentUser || !userData) return;
+  const newName = $('#settingsNickname').value.trim();
+  if (!newName) { $('#settingsNickname').value = userData.profile.nickname; return; }
+  if (newName === userData.profile.nickname || newName.length > 30) return;
+  try { await updateDoc(doc(db, 'users', currentUser.uid), { 'profile.nickname': newName }); userData.profile.nickname = newName; $('#headerSubtitle').textContent = `Рада видеть тебя, ${newName}`; showToast('Имя обновлено'); }
+  catch (err) { showToast('Ошибка: ' + err.message); $('#settingsNickname').value = userData.profile.nickname; }
+});
+
+let pinSetupStep = 'new', pinSetupFirstValue = '';
+function openPinSetup() {
+  if (!userData) return;
+  pinSetupStep = 'new'; pinSetupFirstValue = '';
+  const isChange = !!userData.pinHash;
+  $('#pinSetupTitle').textContent = isChange ? 'Изменить PIN-код' : 'Установить PIN-код';
+  $('#pinSetupDesc').textContent = isChange ? 'Придумайте новый 4-значный PIN. Он будет запрашиваться при каждом заходе.' : 'Придумайте 4-значный код. Он будет запрашиваться при каждом заходе на сайт.';
+  $('#pinSetupBtn').textContent = 'Продолжить'; $('#pinSetupBtn').disabled = false;
+  $('#pinRemoveBtn').style.display = isChange ? 'flex' : 'none';
+  $('#pinSetupError').textContent = ''; $('#pinSetupError').classList.remove('show');
+  $$('#pinSetupBoxes .pin-box').forEach(b => { b.value = ''; b.classList.remove('filled', 'error', 'correct'); });
+  openModal('pinSetupModal'); setTimeout(() => { const f = $('#pinSetupBoxes .pin-box'); if (f) f.focus(); }, 200);
+}
+
+$('#pinSettingsBtn').addEventListener('click', () => { closeModal('settingsModal'); openPinSetup(); });
+setupPinBoxes('#pinSetupBoxes', null);
+
+$('#pinSetupBtn').addEventListener('click', async () => {
+  const pin = getPinValues('#pinSetupBoxes');
+  if (pin.length !== 4) { $('#pinSetupError').textContent = 'Введите 4 цифры'; $('#pinSetupError').classList.add('show'); return; }
+  if (pinSetupStep === 'new') {
+    pinSetupFirstValue = pin; pinSetupStep = 'confirm';
+    $('#pinSetupTitle').textContent = 'Повторите PIN-код'; $('#pinSetupDesc').textContent = 'Введите тот же PIN ещё раз для подтверждения.';
+    $('#pinSetupBtn').textContent = 'Сохранить'; $('#pinSetupError').textContent = ''; $('#pinSetupError').classList.remove('show');
+    $$('#pinSetupBoxes .pin-box').forEach(b => { b.value = ''; b.classList.remove('filled', 'error', 'correct'); });
+    setTimeout(() => { const f = $('#pinSetupBoxes .pin-box'); if (f) f.focus(); }, 100); return;
+  }
+  if (pinSetupStep === 'confirm') {
+    if (pin !== pinSetupFirstValue) {
+      $('#pinSetupError').textContent = 'PIN-коды не совпадают. Попробуйте снова.'; $('#pinSetupError').classList.add('show'); shakePinBoxes('#pinSetupBoxes');
+      pinSetupStep = 'new'; pinSetupFirstValue = ''; $('#pinSetupTitle').textContent = userData.pinHash ? 'Изменить PIN-код' : 'Установить PIN-код'; $('#pinSetupDesc').textContent = 'Придумайте 4-значный код.'; $('#pinSetupBtn').textContent = 'Продолжить';
+      setTimeout(() => { $$('#pinSetupBoxes .pin-box').forEach(b => { b.value = ''; b.classList.remove('filled', 'error', 'correct'); }); const f = $('#pinSetupBoxes .pin-box'); if (f) f.focus(); }, 800); return;
+    }
+    $('#pinSetupBtn').disabled = true;
+    try {
+      const hash = await hashPin(pin, currentUser.uid); await updateDoc(doc(db, 'users', currentUser.uid), { pinHash: hash }); userData.pinHash = hash;
+      safeSession.set('otklik_unlocked', currentUser.uid); updatePinSettingsUI(); closeModal('pinSetupModal'); showToast('PIN-код установлен');
+      confetti({ particleCount: 60, spread: 50, origin: { y: 0.6 }, colors: ['#8b5cf6', '#d946ef', '#10b981'] });
+    } catch (e) { showToast('Ошибка: ' + e.message); $('#pinSetupBtn').disabled = false; }
+  }
+});
+
+$('#pinRemoveBtn').addEventListener('click', async () => {
+  if (!userData || !userData.pinHash) return;
+  try { await updateDoc(doc(db, 'users', currentUser.uid), { pinHash: null }); userData.pinHash = null; safeSession.remove('otklik_unlocked'); updatePinSettingsUI(); closeModal('pinSetupModal'); showToast('PIN-код удалён'); }
+  catch (e) { showToast('Ошибка: ' + e.message); }
+});
+
+$('#logoutBtn').addEventListener('click', () => { closeModal('settingsModal'); openModal('logoutConfirmModal'); });
+$('#confirmLogoutBtn').addEventListener('click', () => { closeModal('logoutConfirmModal'); signOut(auth); });
+
+$('#openFeedbackBtn').addEventListener('click', () => { closeModal('settingsModal'); openModal('feedbackModal'); });
+$('#feedbackForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const type = $('#fbType').value, text = $('#fbText').value.trim(); if (!text) return;
+  try {
+    await addDoc(collection(db, 'feedback'), { uid: currentUser.uid, email: userData.email, type, text, createdAt: serverTimestamp() });
+    $('#fbText').value = '';
+    closeModal('feedbackModal');
+    setTimeout(() => {
+      openModal('feedbackThanksModal');
+      confetti({ particleCount: 150, spread: 90, origin: { y: 0.5 }, colors: ['#8b5cf6', '#d946ef', '#ec4899', '#fbbf24', '#10b981'] });
+    }, 250);
+  } catch (e) { showToast('Ошибка отправки'); }
+});
+
+$('#openSupportBtn').addEventListener('click', () => {
+  closeModal('settingsModal');
+  if (currentUser) {
+    supportChatOpen = true;
+    supportFirstRender = true;
+    lastSeenSupportTime = Date.now();
+    supportMessages.forEach(m => {
+      const ts = m.createdAt?.toMillis?.() || 0;
+      if (ts > lastSeenSupportTime - 1000) lastSeenSupportTime = Math.max(lastSeenSupportTime, ts);
+    });
+    localStorage.setItem(`otklik_support_seen_${currentUser.uid}`, String(lastSeenSupportTime));
+    updateUnreadIndicator();
+    updateSupportStatus();
+    renderSupportMessages();
+  }
+  openModal('supportModal');
+});
+
+$('#chatSendBtn').addEventListener('click', async () => {
+  const text = $('#chatInput').value.trim();
+  if (!text || !currentUser) return;
+  $('#chatInput').value = '';
+  const msgData = { from: 'user', text, createdAt: serverTimestamp() };
+  if (replyingTo) { msgData.replyTo = { text: replyingTo.text, from: replyingTo.from }; }
+  replyingTo = null;
+  $('#chatReplyPreview').style.display = 'none';
+  try {
+    await addDoc(collection(db, 'support', currentUser.uid, 'messages'), msgData);
+  } catch (e) { showToast('Ошибка: ' + e.message); }
+});
+$('#chatInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); $('#chatSendBtn').click(); } });
+
+setInterval(updateSupportStatus, 60000);
+updateSupportStatus();
+
+$('#linkEmailBtn').addEventListener('click', () => { closeModal('settingsModal'); openModal('linkEmailModal'); });
+$('#confirmLinkEmailBtn').addEventListener('click', async () => {
+  const email = $('#linkEmailInput').value.trim(), pass = $('#linkPassInput').value;
+  if (!email || pass.length < 6) return showToast('Введите email и пароль (мин. 6 символов)');
+  try { const credential = EmailAuthProvider.credential(email, pass); await linkWithCredential(currentUser, credential); await updateDoc(doc(db, 'users', currentUser.uid), { email }); userData.email = email; $('#settingsEmail').textContent = email; showToast('Email успешно привязан!'); closeModal('linkEmailModal'); }
+  catch (e) { showToast('Ошибка: ' + e.message); }
+});
+
+function openDeleteConfirm() {
+  openModal('deleteAccountModal'); let remaining = 10; const btn = $('#confirmDeleteBtn'); btn.disabled = true; btn.textContent = `Удалить (${remaining})`; clearInterval(deleteTimer);
+  deleteTimer = setInterval(() => { remaining--; if (remaining <= 0) { clearInterval(deleteTimer); deleteTimer = null; btn.disabled = false; btn.textContent = 'Удалить навсегда'; } else btn.textContent = `Удалить (${remaining})`; }, 1000);
+}
+function cancelDelete() { if (deleteTimer) { clearInterval(deleteTimer); deleteTimer = null; } closeModal('deleteAccountModal'); const btn = $('#confirmDeleteBtn'); btn.disabled = true; btn.textContent = 'Удалить (10)'; }
+$('#deleteAccountBtn').addEventListener('click', () => { closeModal('settingsModal'); openDeleteConfirm(); });
+$('#cancelDeleteBtn').addEventListener('click', cancelDelete);
+$$('[data-close-delete]').forEach(b => b.addEventListener('click', cancelDelete));
+
+$('#confirmDeleteBtn').addEventListener('click', async () => {
+  const btn = $('#confirmDeleteBtn'); if (btn.disabled) return; btn.disabled = true; btn.textContent = 'Удаление...';
+  try {
+    const uid = currentUser.uid, username = userData?.profile?.username;
+    const sessionsSnap = await getDocs(collection(db, 'users', uid, 'sessions')); for (const d of sessionsSnap.docs) await deleteDoc(d.ref);
+    const chatSnap = await getDocs(collection(db, 'support', uid, 'messages')); for (const d of chatSnap.docs) await deleteDoc(d.ref);
+    const hrtSnap = await getDocs(collection(db, 'users', uid, 'hrtLogs')); for (const d of hrtSnap.docs) await deleteDoc(d.ref);
+    const fbQuery = query(collection(db, 'feedback'), where('uid', '==', uid)); const fbSnap = await getDocs(fbQuery); for (const d of fbSnap.docs) await deleteDoc(d.ref);
+    const postQuery = query(collection(db, 'community_posts'), where('uid', '==', uid)); const postSnap = await getDocs(postQuery); for (const d of postSnap.docs) await deleteDoc(d.ref);
+    await deleteDoc(doc(db, 'users', uid)); if (username) { try { await deleteDoc(doc(db, 'usernames', username)); } catch (e) {} }
+    await deleteUser(currentUser);
+    safeSession.remove('otklik_unlocked'); try { localStorage.removeItem('otklik_has_account'); } catch(e){}
+    cancelDelete(); showToast('Аккаунт и все данные удалены.'); setTimeout(() => window.location.reload(), 1500);
+  } catch (e) { if (e.code === 'auth/requires-recent-login') showToast('Требуется повторный вход. Выйдите и войдите заново.'); else showToast('Ошибка удаления: ' + e.message); btn.disabled = false; btn.textContent = 'Удалить навсегда'; }
+});
+
+$('#closerBtn').addEventListener('click', () => { openModal('closerModal'); try { confetti({ particleCount: 90, spread: 75, origin: { y: 0.6 }, colors: ['#8b5cf6', '#d946ef', '#ec4899', '#fbbf24', '#10b981'] }); } catch(e){} });
+$('#closerCta').addEventListener('click', () => { showToast('Скоро здесь появится оформление ✨'); try { confetti({ particleCount: 140, spread: 100, origin: { y: 0.5 }, colors: ['#8b5cf6', '#d946ef', '#ec4899', '#fbbf24'] }); } catch(e){} });
+
+const hzScaleEl = $('#hzScale'); let scaleDrag = null;
+function onScalePointerDown(clientY, e) { scaleDrag = { startY: clientY, startMin: scaleMin, startMax: scaleMax }; if (e && e.preventDefault) e.preventDefault(); }
+function onScalePointerMove(clientY) { if (!scaleDrag) return; const dy = scaleDrag.startY - clientY, center = (scaleDrag.startMin + scaleDrag.startMax) / 2, startRange = scaleDrag.startMax - scaleDrag.startMin; const factor = Math.max(0.35, Math.min(2.6, 1 + dy / 220)); let newRange = startRange * factor; newRange = Math.max(60, Math.min(440, newRange)); let newMin = Math.max(20, center - newRange / 2), newMax = Math.min(500, center + newRange / 2); if (newMax - newMin < 60) { if (newMax >= 500) newMin = newMax - 60; else newMax = newMin + 60; } scaleMin = Math.round(newMin); scaleMax = Math.round(newMax); updateHzLabels(); drawGraph(); }
+function onScalePointerUp() { scaleDrag = null; }
+function isScaleZone(clientX) { const rect = canvas.getBoundingClientRect(); return (clientX - rect.left) > (rect.width - 60); }
+canvas.addEventListener('mousedown', (e) => { if (!isScaleZone(e.clientX)) return; onScalePointerDown(e.clientY, e); });
+window.addEventListener('mousemove', (e) => { if (!scaleDrag) return; onScalePointerMove(e.clientY); });
+window.addEventListener('mouseup', () => onScalePointerUp());
+canvas.addEventListener('touchstart', (e) => { if (!e.touches[0]) return; if (!isScaleZone(e.touches[0].clientX)) return; onScalePointerDown(e.touches[0].clientY, e); }, { passive: false });
+canvas.addEventListener('touchmove', (e) => { if (!scaleDrag || !e.touches[0]) return; onScalePointerMove(e.touches[0].clientY); e.preventDefault(); }, { passive: false });
+canvas.addEventListener('touchend', () => onScalePointerUp()); canvas.addEventListener('touchcancel', () => onScalePointerUp());
+canvas.addEventListener('mousemove', (e) => { if (scaleDrag) return; const isHover = isScaleZone(e.clientX); hzScaleEl.classList.toggle('hover', isHover); canvas.style.cursor = isHover ? 'ns-resize' : 'default'; });
+canvas.addEventListener('mouseleave', () => { if (!scaleDrag) hzScaleEl.classList.remove('hover'); });
+canvas.addEventListener('click', (e) => { if (!isScaleZone(e.clientX)) return; const rect = canvas.getBoundingClientRect(), y = e.clientY - rect.top, h = rect.height; if (!h) return; const hzAtY = scaleMax - (y / h) * (scaleMax - scaleMin); const labels = $$('.hz-label').filter(l => parseFloat(l.dataset.hz) >= scaleMin && parseFloat(l.dataset.hz) <= scaleMax); if (!labels.length) return; let nearest = labels[0], minDist = Infinity; labels.forEach(l => { const hz = parseFloat(l.dataset.hz), dist = Math.abs(hz - hzAtY); if (dist < minDist) { minDist = dist; nearest = l; } }); if (minDist > 30) return; nearest.classList.remove('bounce'); void nearest.offsetWidth; nearest.classList.add('bounce'); });
+canvas.addEventListener('dblclick', (e) => { if (!isScaleZone(e.clientX)) return; scaleMin = 60; scaleMax = 350; updateHzLabels(); drawGraph(); });
+restoreGraphSettings();
+
+if ('ResizeObserver' in window) { const ro = new ResizeObserver(() => { resizeCanvas(); if (activeMode === 'masc') drawVoiceProgress(lastSessionsCache); }); ro.observe($('#graphWrap')); } else { window.addEventListener('resize', resizeCanvas); }
+window.addEventListener('orientationchange', () => setTimeout(resizeCanvas, 250));
+if (document.fonts && document.fonts.ready) { document.fonts.ready.then(() => resizeCanvas()); }
+requestAnimationFrame(() => { resizeCanvas(); updateHzLabels(); });
+
+/* ============ ADMIN PANEL LOGIC ============ */
+$('#adminPanelBtn').addEventListener('click', () => {
+  closeModal('settingsModal');
+  openModal('adminModal');
+  loadAdminChats();
+  loadAdminFeedback();
+});
+
+$$('.admin-tab').forEach(t => {
+  t.addEventListener('click', () => {
+    $$('.admin-tab').forEach(x => x.classList.remove('active'));
+    $$('.admin-tab-content').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    $('#' + t.dataset.tab).classList.add('active');
+  });
+});
+
+async function loadAdminChats() {
+  const listEl = $('#adminChatList');
+  listEl.innerHTML = '<div class="empty">Загрузка...</div>';
+  try {
+    const snap = await getDocs(collectionGroup(db, 'messages'));
+    const chatsMap = {};
+    snap.forEach(d => {
+      const uid = d.ref.parent.parent.id;
+      if (!chatsMap[uid]) chatsMap[uid] = [];
+      chatsMap[uid].push({ id: d.id, ...d.data() });
+    });
+
+    if (Object.keys(chatsMap).length === 0) {
+      listEl.innerHTML = '<div class="empty">Нет сообщений в поддержку.</div>';
+      return;
+    }
+
+    let html = '';
+    for (const uid of Object.keys(chatsMap)) {
+      const profileSnap = await getDoc(doc(db, 'users', uid));
+      const profile = profileSnap.exists() ? profileSnap.data() : {};
+      const name = profile.profile?.nickname || 'Неизвестный';
+      const avatar = profile.profile?.avatar || '👤';
+      
+      chatsMap[uid].sort((a,b) => (a.createdAt?.toMillis() || 0) - (b.createdAt?.toMillis() || 0));
+      const lastMsg = chatsMap[uid][chatsMap[uid].length - 1];
+      
+      html += `
+        <div class="admin-chat-item" onclick="openAdminChat('${uid}', '${escapeHtml(name)}')">
+          <div class="admin-chat-avatar">${avatar}</div>
+          <div class="admin-chat-info">
+            <strong>${escapeHtml(name)}</strong>
+            <span>${escapeHtml(lastMsg.text.slice(0, 40))}${lastMsg.text.length > 40 ? '...' : ''}</span>
+          </div>
+        </div>
+      `;
+    }
+    listEl.innerHTML = html;
+  } catch (err) {
+    console.error(err);
+    listEl.innerHTML = `<div class="empty" style="color:var(--red)">Ошибка загрузки чатов.<br><small>${err.message}</small></div>`;
+  }
+}
+
+window.backToChats = function() {
+  $('#adminChatView').style.display = 'none';
+  $('#adminChatList').style.display = 'block';
+  if (unsubAdminChat) unsubAdminChat();
+};
+
+window.openAdminChat = function(uid, name) {
+  adminTargetUid = uid;
+  $('#adminChatList').style.display = 'none';
+  $('#adminChatView').style.display = 'block';
+  $('#adminChatName').textContent = name;
+  
+  if (unsubAdminChat) unsubAdminChat();
+  const q = query(collection(db, 'support', uid, 'messages'), orderBy('createdAt', 'asc'));
+  unsubAdminChat = onSnapshot(q, (snap) => {
+    const chat = $('#adminChatMessages');
+    chat.innerHTML = '';
+    snap.forEach(d => {
+      const msg = d.data();
+      const div = document.createElement('div');
+      div.className = `chat-bubble ${msg.from === 'owner' ? 'user' : 'owner'}`;
+      div.textContent = msg.text;
+      chat.appendChild(div);
+    });
+    chat.scrollTop = chat.scrollHeight;
+  });
+};
+
+$('#adminChatSendBtn').addEventListener('click', async () => {
+  const text = $('#adminChatInput').value.trim();
+  if (!text || !adminTargetUid) return;
+  $('#adminChatInput').value = '';
+  try {
+    await addDoc(collection(db, 'support', adminTargetUid, 'messages'), {
+      from: 'owner',
+      text,
+      createdAt: serverTimestamp()
+    });
+  } catch (err) { showToast('Ошибка отправки: ' + err.message); }
+});
+$('#adminChatInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') $('#adminChatSendBtn').click(); });
+
+async function loadAdminFeedback() {
+  const listEl = $('#adminFeedbackList');
+  listEl.innerHTML = '<div class="empty">Загрузка...</div>';
+  try {
+    const q = query(collection(db, 'feedback'), orderBy('createdAt', 'desc'));
+    const snap = await getDocs(q);
+    if (snap.empty) {
+      listEl.innerHTML = '<div class="empty">Нет обратной связи.</div>';
+      return;
+    }
+    let html = '';
+    snap.forEach(d => {
+      const data = d.data();
+      const date = data.createdAt?.toDate() ? data.createdAt.toDate().toLocaleString() : '...';
+      html += `
+        <div class="card" style="margin-bottom:10px; padding:12px;">
+          <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-bottom:6px;">
+            <span><b>${escapeHtml(data.type)}</b></span>
+            <span>${date}</span>
+          </div>
+          <div style="font-size:13px; margin-bottom:8px;">${escapeHtml(data.text)}</div>
+          <div style="font-size:11px; color:var(--muted);">UID: ${data.uid}</div>
+        </div>
+      `;
+    });
+    listEl.innerHTML = html;
+  } catch (err) {
+    listEl.innerHTML = `<div class="empty" style="color:var(--red)">Ошибка загрузки: ${err.message}</div>`;
+  }
+}
+</script>
+</body>
+</html>
