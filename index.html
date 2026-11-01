@@ -1246,14 +1246,13 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
       </article>
 
       <div id="statsGrid">
-<article class="card stat-card" id="coinCard">
+<article class="card stat-card" id="coinCard" style="padding-bottom: 12px;">
   <div class="coin-balance">
     <div>
       <div class="coin-label-line" style="display:flex; justify-content:space-between; width:100%;">
         <div class="stat-label" data-i18n="stats.coins">Баланс монеток</div>
-        <!-- Перенесли кнопку сюда, на правый край -->
         <button class="coin-info-btn" id="coinInfoBtn" type="button" aria-label="Как заработать монетки" style="margin-left:auto;">ⓘ</button>
-                <div class="coin-tooltip" id="coinTooltip" role="tooltip">
+        <div class="coin-tooltip" id="coinTooltip" role="tooltip">
                   <div class="coin-tooltip-title" data-i18n="coin.tooltip.title">Как заработать монетки</div>
                   <div class="coin-tooltip-row"><span>✦</span><span data-i18n="coin.tooltip.duration">0.02 монетки за секунду практики</span></div>
                   <div class="coin-tooltip-row"><span>✦</span><span data-i18n="coin.tooltip.target">0.5 монетки за секунду в целевой зоне</span></div>
@@ -1264,7 +1263,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
               </div>
               <div class="coin-amount"><span class="coin-icon" aria-hidden="true">✦</span><span id="coinBalance">300</span></div>
             </div>
-            <span class="stat-icon" aria-hidden="true">✦</span>
           </div>
           <div class="coin-caption">Награды за практику и сохранение стрика</div>
         </article>
