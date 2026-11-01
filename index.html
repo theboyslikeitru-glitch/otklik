@@ -894,10 +894,25 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 [data-theme="dark"]{--muted:#A6AAA6}
 
 .coin-icon{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--accent));border:1px solid rgba(0,0,0,.06);color:#fff;font-size:14px;font-weight:900;vertical-align:middle;box-shadow:0 2px 6px rgba(0,0,0,.12);line-height:1;font-family:Manrope,system-ui,sans-serif}
-.coin-balance{display:flex;align-items:center;gap:8px;justify-content:space-between}
+/* C2: Убрали лишнюю высоту (padding) и C3: выровняли элементы */
+#coinCard { padding: 14px 17px; min-height: auto; overflow: visible; }
+.coin-balance{display:flex;align-items:center;gap:8px;justify-content:space-between; position: relative;}
 .coin-amount{display:inline-flex;align-items:center;gap:8px;font-size:25px;font-weight:800;letter-spacing:-.04em}
 .coin-caption{font-size:10px;color:var(--muted);margin-top:6px;line-height:1.45}
-.coin-label-line{position:relative;display:inline-flex;align-items:center;gap:5px;margin-bottom:2px}
+.coin-label-line{position:relative;display:inline-flex;align-items:center;gap:5px;margin-bottom:2px; z-index: 80;}
+
+/* C1: Делаем тултип поверх всего (z-index 9999), убираем обрезку */
+.coin-tooltip {
+  position:absolute; top:calc(100% + 8px); right:0; left:auto; /* Прижимаем к правому краю */
+  width:280px; max-width:calc(100vw - 46px); z-index:9999; 
+  background:var(--surface); border:1.5px solid var(--border); border-radius:14px; padding:12px 14px; 
+  box-shadow: 0 12px 32px rgba(0,0,0,.25); text-align:left; opacity:0; pointer-events:none; 
+  transform:translateY(-6px); transition:opacity .22s ease,transform .22s ease; 
+  font-size:11.5px; line-height:1.5; font-weight:500; color:var(--muted);
+}
+
+/* Убираем старую звездочку в правом углу карточки */
+#coinCard .stat-icon { display: none !important; }
 .coin-info-btn{background:transparent;border:none;color:var(--muted);font-size:15px;cursor:pointer;padding:0 2px;line-height:1;transition:color .2s ease;font-family:inherit;display:inline-grid;place-items:center}
 .coin-info-btn:hover,.coin-info-btn:focus-visible{color:var(--primary);outline:none}
 .coin-tooltip{position:absolute;top:calc(100% + 8px);left:-10px;width:280px;max-width:calc(100vw - 46px);z-index:80;background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:12px 14px;box-shadow:0 12px 32px rgba(0,0,0,.18);text-align:left;opacity:0;pointer-events:none;transform:translateY(-6px);transition:opacity .22s ease,transform .22s ease;font-size:11.5px;line-height:1.5;font-weight:500;letter-spacing:0;text-transform:none;color:var(--muted)}
@@ -1231,12 +1246,13 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
       </article>
 
       <div id="statsGrid">
-        <article class="card stat-card" id="coinCard">
-          <div class="coin-balance">
-            <div>
-              <div class="coin-label-line">
-                <div class="stat-label" data-i18n="stats.coins">Баланс монеток</div>
-                <button class="coin-info-btn" id="coinInfoBtn" type="button" aria-label="Как заработать монетки">ⓘ</button>
+<article class="card stat-card" id="coinCard">
+  <div class="coin-balance">
+    <div>
+      <div class="coin-label-line" style="display:flex; justify-content:space-between; width:100%;">
+        <div class="stat-label" data-i18n="stats.coins">Баланс монеток</div>
+        <!-- Перенесли кнопку сюда, на правый край -->
+        <button class="coin-info-btn" id="coinInfoBtn" type="button" aria-label="Как заработать монетки" style="margin-left:auto;">ⓘ</button>
                 <div class="coin-tooltip" id="coinTooltip" role="tooltip">
                   <div class="coin-tooltip-title" data-i18n="coin.tooltip.title">Как заработать монетки</div>
                   <div class="coin-tooltip-row"><span>✦</span><span data-i18n="coin.tooltip.duration">0.02 монетки за секунду практики</span></div>
