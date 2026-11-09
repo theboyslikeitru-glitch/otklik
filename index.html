@@ -1,0 +1,726 @@
+<!doctype html>
+<html lang="ru" data-theme="sage">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F7F7F5">
+<meta name="description" content="Отклик — приватный тренажёр голоса.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Отклик">
+<title>Отклик — пространство твоего голоса</title>
+<link rel="manifest" href='data:application/manifest+json,{"name":"Отклик","short_name":"Отклик","start_url":"./","display":"standalone","background_color":"%23F7F7F5","theme_color":"%234A7C59","icons":[{"src":"data:image/svg%2Bxml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 192 192%27%3E%3Crect width=%27192%27 height=%27192%27 rx=%2748%27 fill=%27%234A7C59%27/%3E%3Ctext x=%2796%27 y=%27128%27 font-size=%2796%27 text-anchor=%27middle%27 fill=%27white%27%3E%E2%9C%A6%3C/text%3E%3C/svg%3E","sizes":"192x192","type":"image/svg+xml"}]}'>
+<script>
+(function(){try{
+  var themes=['sage','lavender','warm','milky'];
+  var saved=localStorage.getItem('theme')||'sage';
+  var palette=localStorage.getItem('otklik_palette')||(saved==='dark'?(localStorage.getItem('otklik_last_light_theme')||'sage'):saved);
+  if(themes.indexOf(palette)<0)palette='sage';
+  var darkSetting=localStorage.getItem('otklik_dark_mode');
+  var dark=darkSetting===null?saved==='dark':darkSetting==='1';
+  document.documentElement.setAttribute('data-theme',palette);
+  document.documentElement.setAttribute('data-mode',dark?'dark':'light');
+  var bgs={sage:'#f5f6f4',lavender:'#FCFBFF',warm:'#FFFAF5',milky:'#F7F7F5'};
+  document.documentElement.style.background=dark?'#141414':(bgs[palette]||'#f5f6f4');
+}catch(e){}})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js" crossorigin="anonymous"></script>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="auth-screen auth-pending" id="authScreen">
+  <div class="auth-logo brand-gradient"><span>Отклик</span><span class="brand-star" aria-hidden="true">✦</span></div>
+  <div class="google-login-wrap">
+  <button class="btn-google" id="googleLoginBtn">
+    <svg viewBox="0 0 48 48" width="20" height="20"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.6 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.4-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.2 5.6l6.2 5.2C41 35.3 44 30.1 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+    <span data-i18n="auth.google">Войти через Google</span>
+  </button>
+  </div>
+  <div style="margin-top:20px;font-size:11px;color:var(--muted);" data-i18n="auth.privacy">🔒 Голос не уходит на сервер · 100% приватно</div>
+</div>
+
+<div class="splash-screen" id="splashScreen">
+</div>
+
+<div class="lang-overlay" id="langOverlay">
+  <div class="lang-overlay-inner">
+    <div class="lang-overlay-star">✦</div>
+    <div class="lang-overlay-text" id="langOverlayText">Обновляем язык интерфейса...</div>
+  </div>
+</div>
+
+<div class="modal" id="onboardingModal">
+  <div class="onb-welcome-heading" data-i18n="onb.welcome">Всего одна настройка — и можно приступать к тренировке!</div>
+  <div class="modal-panel">
+    <div class="onb-step active" id="step-profile">
+      <h2 data-i18n="onb.profile.title">Твой профиль</h2>
+      <p data-i18n="onb.profile.desc">Выбери аватар и придумай имя.</p>
+      <label class="field-label" data-i18n="onb.profile.avatar">Аватар</label>
+      <div class="avatar-grid" id="avatarGrid">
+        <button class="avatar-opt" data-val="🦊">🦊</button><button class="avatar-opt" data-val="🌸">🌸</button>
+        <button class="avatar-opt" data-val="✨">✨</button><button class="avatar-opt" data-val="🦋">🦋</button>
+        <button class="avatar-opt" data-val="🌙">🌙</button><button class="avatar-opt" data-val="🐱">🐱</button>
+        <button class="avatar-opt" data-val="🌿">🌿</button><button class="avatar-opt" data-val="🔥">🔥</button>
+        <button class="avatar-opt" data-val="🎧">🎧</button><button class="avatar-opt" data-val="🎨">🎨</button>
+      </div>
+      <label class="field-label" data-i18n="onb.profile.nickname">Никнейм</label>
+      <input class="input" id="onbNickname" placeholder="Как к тебе обращаться?" maxlength="30" style="margin-bottom: 16px;">
+      <label class="field-label" data-i18n="onb.profile.username">Username (уникальный)</label>
+      <div class="input-wrapper" style="margin-bottom: 16px;">
+        <span class="at-symbol">@</span>
+        <input class="input" id="onbUsername" placeholder="username" maxlength="20" autocomplete="off" aria-describedby="usernameStatus usernamePermanentHint">
+      </div>
+      <div class="username-status" id="usernameStatus" aria-live="polite"></div>
+      <div class="settings-hint" id="usernamePermanentHint" data-i18n="usernamePermanentHint" style="margin:-8px 2px 0 2px;">Важно: после регистрации этот ID нельзя будет изменить.</div>
+      <div class="onb-profile-theme">
+      <h2 data-i18n="onb.theme.title">Выбери оформление</h2>
+      <p data-i18n="onb.theme.desc">Тему можно сменить в любой момент в настройках профиля.</p>
+      <div class="theme-grid" id="onbThemeGrid">
+        <button class="theme-opt selected" data-theme="sage" type="button"><span class="theme-preview" style="--tp:#477b5b;--tp3:#f5f6f4">✦</span><span data-i18n="theme.sage">Шалфей</span></button>
+        <button class="theme-opt" data-theme="lavender" type="button"><span class="theme-preview" style="--tp:#8D82BD;--tp3:#F0EDFA">✦</span><span data-i18n="theme.lavender">Лаванда</span></button>
+        <button class="theme-opt" data-theme="warm" type="button"><span class="theme-preview" style="--tp:#C88E78;--tp3:#F5EAE0">✦</span><span data-i18n="theme.warm">Тёплая</span></button>
+        <button class="theme-opt" data-theme="milky" type="button"><span class="theme-preview" style="--tp:#707070;--tp3:#EFEFED">✦</span><span data-i18n="theme.milky">Молочная</span></button>
+        <span class="theme-grid-hint" data-i18n="onb.theme.hint">Выбери палитру, которая тебе ближе</span>
+      </div>
+      </div>
+      <button class="btn btn-primary" id="onbFinish" data-i18n="common.finish">Завершить</button>
+    </div>
+  </div>
+</div>
+
+<div class="app" id="mainApp">
+  <div class="app-inner">
+    <header>
+      <div><div class="eyebrow" data-i18n="header.eyebrow">Тихое пространство для практики</div><div class="greeting" id="appGreeting">Отклик<span aria-hidden="true"> ✦</span></div><div class="subgreeting" id="headerSubtitle">Твой голос — твой путь</div></div>
+      <div class="header-actions">
+        <button class="closer-btn" id="closerBtn" type="button" data-i18n="header.closer">Ближе</button>
+        <button class="avatar" id="settingsOpen" aria-label="Настройки"><span class="avatar-emoji" id="mainAvatarEmoji">🦊</span><span class="avatar-unread-dot" id="avatarUnreadDot"></span></button>
+      </div>
+    </header>
+
+    <section class="page active" id="page-home" aria-label="Главная">
+      <article class="card hero">
+        <div class="hero-top">
+          <div><h2 data-i18n="home.title">Настрой голос на себя</h2><p data-i18n="home.subtitle">Небольшая регулярная практика важнее идеального результата.</p></div>
+        </div>
+        <div class="mode-select" role="group" aria-label="Программа тренировки">
+          <button class="mode selected" data-mode="fem"><span>✿</span><span data-i18n="mode.fem">Феминизация</span></button>
+          <button class="mode" data-mode="masc"><span>◈</span><span data-i18n="mode.masc">Маскулинизация</span></button>
+          <button class="mode" data-mode="neutral"><span>◇</span><span data-i18n="mode.neutral">Нейтральность</span></button>
+        </div>
+        <p class="mode-hint" id="modeHint" aria-live="polite"></p>
+
+        <section class="voice-agency" aria-labelledby="voiceAgencyTitle">
+          <div class="voice-agency-mark" aria-hidden="true">✦</div>
+          <div class="voice-agency-copy">
+            <div class="voice-agency-title-row"><h3 id="voiceAgencyTitle" data-i18n="voiceAgency.title">Твой голос. Твои ориентиры. Твой путь.</h3><button type="button" class="voice-agency-hide" id="hideVoiceAgency" aria-label="Скрыть блок до повторного входа" title="Скрыть до следующего входа">−</button></div>
+            <p data-i18n="voiceAgency.desc">Здесь нет единственного правильного звучания. Выбирай то, что ближе тебе, и двигайся в комфортном темпе.</p>
+            <div class="voice-agency-details" id="voiceAgencyDetails">
+              <button type="button" class="voice-agency-details-btn" aria-expanded="false" aria-controls="voiceAgencyDetailsContent">
+                <span data-i18n="voiceAgency.details">Как устроен «Отклик»</span>
+                <span class="voice-agency-details-arrow" aria-hidden="true">＋</span>
+              </button>
+              <div class="voice-agency-details-content" id="voiceAgencyDetailsContent">
+                <div class="voice-agency-details-inner">
+                  <p data-i18n="voiceAgency.detailsText">Мы показываем параметры и их изменения, а не оцениваем, насколько твой голос «женский» или «мужской». Твои цели могут быть любыми — и со временем могут меняться.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div class="graph-controls">
+          <div class="graph-badges">
+            <div class="graph-badge"><span class="hz-num" id="hzBadge" aria-live="polite">— Hz</span> <small id="pitchQuality">· <span data-i18n="graph.waiting">ожидание</span></small></div>
+            <div class="resonance-badge" title="Резонанс (яркость голоса)">
+              <span>✦</span>
+              <div class="resonance-meter"><span class="resonance-fill" id="resonanceFill"></span></div>
+              <span class="resonance-value" id="resonanceValue">0%</span>
+            </div>
+          </div>
+          <div class="graph-buttons">
+            <div class="gmode-dropdown">
+              <button class="gmode-toggle" id="gmodeToggle" aria-label="Стиль графика" title="Стиль графика" aria-haspopup="true" aria-expanded="false">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l4-8 4 4 4-8 4 6"/></svg>
+                <svg class="gmode-chevron" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div class="gmode-panel" id="gmodePanel" role="menu">
+                <button class="gmode active" data-graph="line" data-i18n="graph.mode.line">Линия</button>
+                <button class="gmode" data-graph="area" data-i18n="graph.mode.area">Область</button>
+                <button class="gmode" data-graph="glow" data-i18n="graph.mode.glow">Свечение</button>
+              </div>
+            </div>
+            <button class="graph-scale-reset" id="graphScaleReset" type="button" aria-label="Сбросить масштаб графика" title="Сбросить масштаб" hidden>↺</button>
+            <button class="graph-settings-btn" id="graphSettingsBtn" aria-label="Настройки графика" title="Настройки графика"><span class="graph-settings-icon">⚙</span></button>
+          </div>
+        </div>
+
+        <div class="graph-settings" id="graphSettings">
+          <div class="graph-settings-inner">
+            <div class="gs-row">
+              <span class="gs-label" data-i18n="graph.thickness">Толщина линии</span>
+              <div class="range-inputs" style="align-items:center; gap:10px;">
+                <input type="range" id="lineThickness" min="1" max="8" step="0.5" value="2.5">
+                <span id="lineThicknessValue" style="min-width:36px; text-align:center; font-weight:800; font-size:12px;">2.5</span>
+              </div>
+            </div>
+            <div class="gs-row">
+              <span class="gs-label">Скорость отрисовки голоса</span>
+              <select class="select" id="graphResponse" aria-label="Скорость отрисовки голоса">
+                
+                <option value="sharp">Более резкая</option>
+                <option value="instant">Моментальная</option>
+              </select>
+            </div>
+            <div class="gs-row">
+              <span class="gs-label" data-i18n="graph.color">Цвет линии</span>
+              <div style="display:flex; align-items:center; gap:10px;">
+                <input type="color" id="lineColor" value="#4A7C59" style="width:40px; height:32px; border:none; border-radius:8px; background:transparent; cursor:pointer; padding:0;">
+                <input type="text" id="lineColorHex" class="color-hex-input" value="#4A7C59" maxlength="7" spellcheck="false" autocomplete="off">
+              </div>
+            </div>
+            <div class="gs-row">
+              <span class="gs-label" data-i18n="graph.target">Целевой диапазон (Гц)</span>
+              <div class="range-inputs">
+                <input type="number" id="targetLow" min="50" max="450" step="1" value="165">
+                <span>—</span>
+                <input type="number" id="targetHigh" min="50" max="450" step="1" value="270">
+              </div>
+            </div>
+            <div class="gs-row">
+              <div class="gs-row-inline">
+                <span class="gs-label" data-i18n="graph.showZones">Разбивка по полу</span>
+                <label class="toggle"><input type="checkbox" id="showZones" checked><span class="toggle-slider"></span></label>
+              </div>
+            </div>
+            <div class="gs-row">
+              <div class="gs-row-inline">
+                <span class="gs-label" data-i18n="graph.zoneColors">Цвета зон</span>
+                <button class="gs-reset-btn" id="resetZoneColors" data-i18n="graph.reset">Сбросить</button>
+              </div>
+              <div class="zone-colors">
+                <div class="zone-color-item">
+                  <input type="color" id="colorMale" value="#6495ED">
+                  <span data-i18n="graph.zone.male">Мужской</span>
+                  <label class="toggle toggle-sm" aria-label="Показывать мужскую зону"><input type="checkbox" id="showZoneMale" checked><span class="toggle-slider"></span></label>
+                </div>
+                <div class="zone-color-item">
+                  <input type="color" id="colorAndro" value="#ffffff">
+                  <span data-i18n="graph.zone.andro">Андро</span>
+                  <label class="toggle toggle-sm" aria-label="Показывать андрогинную зону"><input type="checkbox" id="showZoneAndro" checked><span class="toggle-slider"></span></label>
+                </div>
+                <div class="zone-color-item">
+                  <input type="color" id="colorFemale" value="#ffa0be">
+                  <span data-i18n="graph.zone.female">Женский</span>
+                  <label class="toggle toggle-sm" aria-label="Показывать женскую зону"><input type="checkbox" id="showZoneFemale" checked><span class="toggle-slider"></span></label>
+                </div>
+                <div class="zone-color-item">
+                  <input type="color" id="colorTarget" value="#22C55E">
+                  <span data-i18n="graph.zone.target">Цель</span>
+                  <label class="toggle toggle-sm" aria-label="Показывать целевую зону"><input type="checkbox" id="showZoneTarget" checked><span class="toggle-slider"></span></label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="graph-wrap" id="graphWrap">
+          <canvas id="voiceCanvas" role="img" aria-label="График высоты голоса в реальном времени"></canvas>
+          <div class="graph-placeholder" id="graphPlaceholder">
+            <div class="graph-placeholder-icon">🎙️</div>
+            <div class="graph-placeholder-title" data-i18n="graph.placeholder.title">Здесь появится твой голос</div>
+            <div class="graph-placeholder-text" data-i18n="graph.placeholder.desc">Нажми «Начать тренировку», чтобы увидеть высоту и резонанс в реальном времени</div>
+          </div>
+          <div class="hz-scale" id="hzScale">
+            <div class="hz-label edge-bottom" data-hz="50" style="top:100%">50</div>
+            <div class="hz-label" data-hz="150" style="top:75%">150</div>
+            <div class="hz-label" data-hz="250" style="top:50%">250</div>
+            <div class="hz-label" data-hz="350" style="top:25%">350</div>
+            <div class="hz-label edge-top" data-hz="450" style="top:0">450</div>
+          </div>
+        </div>
+        <div class="graph-legend"><b id="targetLegend">Цель: 165–270 Гц</b></div>
+        <div class="zone-legend" id="zoneLegend">
+          <span class="zone-legend-item"><span class="zone-dot male"></span><span data-i18n="graph.zone.male">Мужской</span></span>
+          <span class="zone-legend-item"><span class="zone-dot andro"></span><span data-i18n="graph.zone.androFull">Андрогинный</span></span>
+          <span class="zone-legend-item"><span class="zone-dot female"></span><span data-i18n="graph.zone.female">Женский</span></span>
+        </div>
+
+        <button class="btn btn-primary" id="micBtn" style="margin-top:16px;" data-i18n="mic.start">Начать тренировку</button>
+        <button type="button" id="voiceTiredBtn" data-i18n="voiceTired.button">😌 Голос устал</button>
+
+        <div class="session-meta" id="sessionMeta">
+          <div class="mini-stat elapsed-stat" id="elapsedStat"><strong id="elapsedValue">00:00</strong><span data-i18n="stats.elapsed">Время сессии</span></div>
+          <div class="mini-stat" id="inTargetMiniStat"><strong id="inTargetValue">00:00</strong><span data-i18n="stats.inTarget">В целевой зоне</span></div>
+          <div class="mini-stat"><strong id="avgPitchValue">—</strong><span data-i18n="stats.avgPitch">Средний тон, Гц</span></div>
+        </div>
+        <div class="reminder-toasts" id="reminderToasts"></div>
+
+        <div class="practice-card">
+          <div class="practice-header"><span class="practice-label" data-i18n="practice.label">Текст для практики</span><button type="button" class="practice-scenarios-btn" id="practiceScenariosBtn" aria-label="Библиотека сценариев"><span data-i18n="scenarios.openBtn">Сценарии</span></button></div>
+          <div class="practice-text" id="practiceText" aria-multiline="true" contenteditable="true" spellcheck="false" role="textbox" aria-label="Текст для практики"></div>
+          <div class="practice-resize-row">
+            <button type="button" class="practice-resize-handle" id="practiceResizeHandle" aria-label="Изменить высоту окна текста" title="Потяни вверх или вниз, чтобы изменить высоту окна"></button>
+            <button type="button" class="practice-reset-size" id="practiceResetSize" aria-label="Сбросить размер окна текста" title="Сбросить размер">↺</button>
+          </div>
+          <div class="practice-hint"><span data-i18n="practice.hint">Нажми, чтобы заменить своим · </span><span class="practice-count"><span id="practiceCount">0</span> / 2000</span><span id="practiceHintLive" aria-live="polite" aria-atomic="true" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0"></span></div>
+        </div>
+
+        <div class="voice-progress-widget" id="voiceProgressWidget">
+          <div class="vp-header">
+            <span class="vp-title" data-i18n="vp.title">График снижения голоса</span>
+            <button class="vp-export-btn" id="exportDoctorBtn" data-i18n="vp.export" disabled>Экспорт для врача</button>
+          </div>
+          <div class="vp-chart-wrap">
+            <canvas id="voiceProgressCanvas"></canvas>
+            <div class="vp-empty" id="vpEmpty">
+              <div class="vp-empty-icon">📈</div>
+              <div data-i18n="vp.empty">Данные начнут появляться по мере тренировок</div>
+            </div>
+          </div>
+          <div class="vp-hint" id="vpHint" data-i18n="vp.hint">Данные появятся после нескольких сохранённых сессий</div>
+        </div>
+      </article>
+
+      <div id="statsGrid">
+        <article class="card stat-card" id="coinCard">
+          <div class="coin-balance">
+            <div>
+              <div class="coin-label-line">
+                <div class="stat-label" data-i18n="stats.coins">Баланс монеток</div>
+                <button class="coin-info-btn" id="coinInfoBtn" type="button" aria-label="Как заработать монетки">ⓘ</button>
+                <div class="coin-tooltip" id="coinTooltip" role="tooltip">
+                  <div class="coin-tooltip-title" data-i18n="coin.tooltip.title">Как заработать монетки</div>
+                  <div class="coin-tooltip-row"><span>✦</span><span data-i18n="coin.tooltip.duration">0.02 монетки за секунду практики</span></div>
+                  <div class="coin-tooltip-row"><span>✦</span><span data-i18n="coin.tooltip.target">0.5 монетки за секунду в целевой зоне</span></div>
+                  <div class="coin-tooltip-row"><span>✦</span><span data-i18n="coin.tooltip.streak">+15 монеток за сохранение сессии в новый день</span></div>
+                  <div class="coin-tooltip-row"><span>✦</span><span data-i18n="coin.tooltip.support">+499 монеток ежемесячно для поддержавших проект</span></div>
+                  <div class="coin-tooltip-row"><span>✦</span><span class="coin-repair-text" data-i18n="coin.tooltip.repair">−185 монеток за восстановление пропущенного стрика</span></div>
+                </div>
+              </div>
+              <div class="coin-amount"><span class="coin-icon" aria-hidden="true">✦</span><span id="coinBalance">300</span></div>
+            </div>
+            <span class="stat-icon" aria-hidden="true">✦</span>
+          </div>
+          <div class="coin-caption" data-i18n="coin.caption">Награды за практику и сохранение стрика</div>\n          <button type="button" class="btn btn-secondary" id="coinShopBtn" style="width:100%;margin-top:8px;min-height:38px;font-size:11px" data-i18n="coinShop.open">🛍 Магазин</button>
+        </article>
+        <article class="card stat-card unlit" id="streakCard"><span class="stat-icon fire">🔥</span><div class="stat-label" data-i18n="stats.streak">Текущий стрик</div><div class="stat-number"><span id="streakValue">0</span> <small data-i18n="stats.days">дн.</small></div><div style="font-size:10px;color:var(--muted)" id="streakHint" data-i18n="stats.streakHint">Начни с одной короткой практики</div><button class="streak-repair-btn" id="streakRepairBtn" type="button"><span>↻</span><span>Восстановить стрик</span><span class="coin-icon" aria-hidden="true">✦</span><span>185</span></button></article>
+        <article class="card hrt-widget" id="hrtWidget">
+          <div class="hrt-header">
+            <div style="min-width:0;flex:1">
+              <div class="hrt-title"><span data-i18n="hrt.day">День</span> <span id="hrtDaysNum">—</span> <span data-i18n="hrt.onHrt">на ЗГТ</span></div>
+              <div class="hrt-sub" id="hrtSubtitle" data-i18n="hrt.subtitle.empty">Укажи дату начала — и мы будем поддерживать тебя каждый день.</div>
+            </div>
+            <button class="hrt-edit-btn" id="hrtSetDateBtn" aria-label="Изменить дату">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+          </div>
+        </article>
+        <article class="card stat-card" id="targetStatCard"><span class="stat-icon">◷</span><div class="stat-label" data-i18n="stats.inTarget">В целевой зоне</div><div class="stat-number"><span id="totalTarget">0</span> <small data-i18n="stats.min">мин</small></div><div style="font-size:10px;color:var(--muted);margin-top:8px" id="totalSessions">0 <span data-i18n="stats.sessionsSaved">сохранённых сессий</span></div></article>
+      </div>
+    </section>
+
+    <section class="page" id="page-sessions" aria-label="Сессии">
+      <div class="section-head" style="margin-top:0"><div><h2><span data-i18n="sessions.title">Сессии</span> <span class="sessions-count" id="sessionsCount">0/30</span></h2><p data-i18n="sessions.subtitle">История твоих тренировок</p></div></div>
+      <div class="history-list" id="recentSessions"></div>
+    </section>
+
+    <section class="page" id="page-programs" aria-label="Программы">
+      <div class="section-head" style="margin-top:0"><div><h2 data-i18n="programs.title">Программы</h2><p data-i18n="programs.subtitle">Пошаговые курсы для твоего голоса</p></div></div>
+      <div class="programs-grid" id="programsGrid"></div>
+    </section>
+
+    <section class="page" id="page-closer" aria-label="Ближе">
+      <div class="closer-page-hero">
+        <div class="closer-star">✦</div>
+        <h2 data-i18n="closer.page.title">Отклик: Ближе</h2>
+        <p data-i18n="closer.newDesc">Ближе — это способ поддержать проект. Все функции приложения остаются бесплатными для всех. Если ты можешь — поддержи. Если нет — просто пользуйся.</p>
+      </div>
+      <div class="closer-features">
+        <div class="closer-feature"><div class="closer-feature-icon">🎓</div><div><strong data-i18n="closer.benefit1">Академия программ</strong></div></div>
+        <div class="closer-feature"><div class="closer-feature-icon">💊</div><div><strong data-i18n="closer.benefit2">Расширенный трекер ЗГТ</strong></div></div>
+        <div class="closer-feature"><div class="closer-feature-icon">📈</div><div><strong data-i18n="closer.benefit3">Расширенная аналитика</strong></div></div>
+        <div class="closer-feature"><div class="closer-feature-icon">💚</div><div><strong data-i18n="closer.benefit4">Проект живёт благодаря вам</strong></div></div>
+      </div>
+      <button class="btn closer-cta" id="closerPageCta" style="width:100%" data-i18n="closer.cta">Хочу поддержать</button>
+      <button class="btn btn-secondary" id="closerScholarshipBtn" style="width:100%;margin-top:8px" data-i18n="closer.scholarship">Не могу позволить — попросить доступ</button>
+      <button class="btn btn-secondary" id="closerGiftBtn" style="width:100%;margin-top:8px" data-i18n="closer.gift">Подарить другу</button>
+    </section>
+  </div>
+</div>
+
+<nav class="bottom-nav" id="bottomNav" style="display:none;">
+  <button class="nav-item active" data-nav="home"><span class="nav-icon">⌂</span><span data-i18n="nav.home">Главная</span></button>
+  <button class="nav-item" data-nav="sessions"><span class="nav-icon">🎧</span><span data-i18n="nav.sessions">Сессии</span></button>
+  <button class="nav-item" data-nav="programs"><span class="nav-icon">🎓</span><span data-i18n="nav.programs">Программы</span></button>
+  <button class="nav-item" data-nav="closer"><span class="nav-icon">✦</span><span data-i18n="nav.closer">Ближе</span></button>
+</nav>
+
+<button class="scroll-top" id="scrollTopBtn" aria-label="Наверх" title="Наверх">↑</button>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<div class="modal" id="resultModal" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
+  <div class="modal-panel">
+    <div style="text-align:center;margin-bottom:18px">
+      <div style="font-size:42px;color:var(--primary);line-height:1">✦</div>
+      <h2 id="resultTitle" style="margin-top:8px" data-i18n="result.title">Сессия завершена</h2>
+      <p id="resultSubtitle" style="margin-bottom:0" data-i18n="result.subtitle">Время для себя — это уже результат.</p>
+      <div id="resultInsight"></div>
+      <div id="resultSummary" class="result-summary" style="display:none"></div>
+    </div>
+    <div id="resultAudioWrap"></div>
+    <div id="resultStats">
+      <div class="card"><strong id="resultMin" style="font-size:22px">—</strong><div style="font-size:10px;color:var(--muted)" data-i18n="result.min">Мин, Гц</div></div>
+      <div class="card"><strong id="resultAverage" style="font-size:22px">—</strong><div style="font-size:10px;color:var(--muted)" data-i18n="result.avgPitch">Средний, Гц</div></div>
+      <div class="card"><strong id="resultMax" style="font-size:22px">—</strong><div style="font-size:10px;color:var(--muted)" data-i18n="result.max">Макс, Гц</div></div>
+      <div class="card" id="resultTargetCard"><strong id="resultTarget" style="font-size:22px">0</strong><div style="font-size:10px;color:var(--muted)" data-i18n="result.inTarget">В целевой зоне</div></div>
+      <div class="card"><strong id="resultResonance" style="font-size:22px">—</strong><div style="font-size:10px;color:var(--muted)" data-i18n="result.resonance">Резонанс</div></div>
+    </div>
+    <div class="result-actions">
+      <button class="btn btn-primary" id="saveSessionBtn" data-i18n="result.save">Сохранить в аккаунт</button>
+      <button class="btn btn-secondary result-icon-btn" id="downloadReportBtn" aria-label="Скачать отчёт" title="Скачать отчёт">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      </button>
+      <button class="btn btn-secondary result-delete-btn" id="discardSessionBtn" aria-label="Удалить" title="Удалить">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="streakLossModal" role="dialog" aria-modal="true" aria-labelledby="streakLossTitle">
+  <div class="modal-panel">
+    <div class="modal-controls"><button class="ctrl-btn" id="closeStreakLossBtn" type="button" aria-label="Закрыть">×</button></div>
+    <div class="streak-loss-emoji" aria-hidden="true">🥺</div>
+    <h2 id="streakLossTitle" data-i18n="streakLoss.title">Стрик обнулился</h2>
+    <p id="streakLossDescription" data-i18n="streakLoss.description">Вчера не было тренировки, поэтому серия сброшена до нуля. Ты можешь восстановить её сегодня.</p>
+    <div class="streak-loss-amount"><span class="coin-icon" aria-hidden="true">✦</span><span data-i18n="streakLoss.amount">185 монеток</span></div>
+    <button class="btn btn-primary" id="restoreStreakModalBtn" type="button" data-i18n="streakLoss.restore">Восстановить стрик</button>
+    <p class="streak-loss-note">Восстановление доступно только до конца сегодняшнего дня.</p>
+  </div>
+</div>
+
+<div class="modal" id="closerModal" role="dialog" aria-modal="true">
+  <div class="modal-panel">
+    <div class="modal-controls"><button class="ctrl-btn" data-close="closerModal" aria-label="Закрыть"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button></div>
+    <div class="closer-hero"><div class="closer-star">✦</div><h2>Отклик: Ближе</h2><p class="closer-desc" data-i18n="closer.newDesc">Ближе — это способ поддержать проект. Все функции приложения остаются бесплатными для всех. Если ты можешь — поддержи. Если нет — просто пользуйся.</p></div>
+    <div class="closer-features">
+      <div class="closer-feature"><div class="closer-feature-icon">🎓</div><div><strong data-i18n="closer.benefit1">Академия программ</strong></div></div>
+      <div class="closer-feature"><div class="closer-feature-icon">💊</div><div><strong data-i18n="closer.benefit2">Расширенный трекер ЗГТ</strong></div></div>
+      <div class="closer-feature"><div class="closer-feature-icon">📈</div><div><strong data-i18n="closer.benefit3">Расширенная аналитика</strong></div></div>
+      <div class="closer-feature"><div class="closer-feature-icon">💚</div><div><strong data-i18n="closer.benefit4">Проект живёт благодаря вам</strong></div></div>
+    </div>
+    <button class="btn closer-cta" id="closerCta" data-i18n="closer.cta">Хочу поддержать</button>
+    <button class="btn btn-secondary" id="closerScholarshipBtnPage" style="width:100%;margin-top:8px" data-i18n="closer.scholarship">Не могу позволить — попросить доступ</button>
+    <button class="btn btn-secondary" id="closerGiftBtnPage" style="width:100%;margin-top:8px" data-i18n="closer.gift">Подарить другу</button>
+    <p class="closer-note" data-i18n="closer.note">Отменить можно в любой момент. Никаких скрытых платежей и обязательств.</p>
+  </div>
+</div>
+
+<div class="modal" id="hrtDateModal" role="dialog" aria-modal="true">
+  <div class="modal-panel">
+    <div class="modal-controls"><button class="ctrl-btn" data-close="hrtDateModal" aria-label="Закрыть"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button></div>
+    <h2 data-i18n="hrtModal.title">Когда началась ЗГТ?</h2>
+    <p data-i18n="hrtModal.desc">Мы посчитаем твой день и будем поддерживать в тренировках. Только ты видишь эту дату.</p>
+    <input class="input" type="date" id="hrtDateInput" style="margin-bottom:16px;">
+    <button class="btn btn-primary" id="hrtDateSaveBtn" data-i18n="common.save">Сохранить</button>
+    <button class="btn btn-secondary" style="width:100%;margin-top:9px;" data-close="hrtDateModal" data-i18n="common.cancel">Отмена</button>
+  </div>
+</div>
+
+<div class="modal" id="freeProgramModal" role="dialog" aria-modal="true">
+  <div class="modal-panel">
+    <div class="modal-controls"><button class="ctrl-btn" data-close="freeProgramModal" aria-label="Закрыть"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button></div>
+    <h2 data-i18n="freeProgram.title">🌱 7 дней знакомства с голосом</h2>
+    <p data-i18n="freeProgram.desc">Короткие практики на каждый день. Раскрой любой день, чтобы увидеть инструкцию.</p>
+    <div id="freeProgramDays"></div>
+    <button class="btn btn-primary" style="margin-top:14px;" data-go="home" onclick="closeModal('freeProgramModal')" data-i18n="freeProgram.go">К тренировке</button>
+  </div>
+</div>
+
+<div class="modal" id="settingsModal" role="dialog" aria-modal="true">
+  <div class="modal-panel">
+    <div class="modal-controls">
+      <button class="ctrl-btn" id="themeToggle" aria-label="Сменить тему">🌙</button>
+      <button class="ctrl-btn" data-close="settingsModal" aria-label="Закрыть"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>
+    </div>
+    <div class="profile-header">
+      <button class="profile-avatar" id="settingsAvatar" aria-label="Изменить аватар"><span class="avatar-text" id="settingsAvatarText">🦊</span></button>
+      <div class="profile-info">
+        <input class="profile-name-input" id="settingsNickname" maxlength="30" placeholder="Твоё имя" value="Пользователь">
+        <p id="settingsEmail">email@gmail.com</p>
+        <p class="profile-user-id" id="settingsUserId">@username</p>
+      </div>
+    </div>
+    <div class="avatar-picker" id="avatarPicker"><div class="avatar-picker-inner"><div class="avatar-grid" id="settingsAvatarGrid">
+      <button class="avatar-opt" data-val="🦊">🦊</button><button class="avatar-opt" data-val="🌸">🌸</button>
+      <button class="avatar-opt" data-val="✨">✨</button><button class="avatar-opt" data-val="🦋">🦋</button>
+      <button class="avatar-opt" data-val="🌙">🌙</button><button class="avatar-opt" data-val="🐱">🐱</button>
+      <button class="avatar-opt" data-val="🌿">🌿</button><button class="avatar-opt" data-val="🔥">🔥</button>
+      <button class="avatar-opt" data-val="🎧">🎧</button><button class="avatar-opt" data-val="🎨">🎨</button>
+    </div></div></div>
+
+    <div class="settings-section">
+      <div class="settings-label no-select" data-i18n="settings.language">Язык</div>
+      <div class="custom-select" id="langCustomSelect">
+        <button class="custom-select-btn" id="langSelectBtn" type="button">
+          <span class="custom-select-label" id="langSelectLabel">Русский</span>
+          <svg class="custom-select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="custom-select-panel" id="langSelectPanel">
+          <button data-lang="ru">Русский</button>
+          <button data-lang="en">English</button>
+          <button data-lang="es">Español</button>
+          <button data-lang="pt">Português</button>
+          <button data-lang="fr">Français</button>
+          <button data-lang="de">Deutsch</button>
+          <button data-lang="th">ไทย</button>
+          <button data-lang="id">Bahasa Indonesia</button>
+          <button data-lang="tl">Tagalog</button>
+        </div>
+      </div>
+    </div>
+
+    
+    <div class="settings-section">
+      <div class="settings-label no-select" data-i18n="settings.actions">Действия</div>
+      <button class="btn btn-secondary" style="width:100%;margin-bottom:8px;justify-content:flex-start;position:relative;" id="openSupportBtn"><span data-i18n="settings.support">💬 Поддержка (чат)</span><span class="support-unread-dot" id="supportUnreadDot" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);width:10px;height:10px;border-radius:50%;background:#D89090;display:none"></span></button>
+      <button class="btn btn-secondary" style="width:100%;justify-content:flex-start;" id="openFeedbackBtn" data-i18n="settings.feedback">📝 Оставить отзыв / Жалобу</button>
+    </div>
+
+    <div class="settings-section" id="comfortSection">
+      <div class="settings-label no-select" data-i18n="settings.comfort">Комфорт</div>
+      <div class="reminder-row"><label class="toggle"><input type="checkbox" id="comfortHideNumbers"><span class="toggle-slider"></span></label><div class="reminder-label"><span data-i18n="settings.hideNumbers">🔢 Скрыть цифры</span><small data-i18n="settings.hideNumbersHint">Только линии и зоны, без Hz</small></div></div>
+      <div class="reminder-row"><label class="toggle"><input type="checkbox" id="comfortHideStreak"><span class="toggle-slider"></span></label><div class="reminder-label"><span data-i18n="settings.hideStreak">🔥 Скрыть стрик</span><small data-i18n="settings.hideStreakHint">Данные сохранятся</small></div></div>
+      <div class="reminder-row"><label class="toggle"><input type="checkbox" id="comfortHideCoins"><span class="toggle-slider"></span></label><div class="reminder-label"><span data-i18n="settings.hideCoins">✦ Скрыть монетки</span><small data-i18n="settings.hideCoinsHint">Данные сохранятся</small></div></div>
+    </div>
+    <button class="btn btn-delete" style="margin-top:8px;" id="deleteAccountBtn" data-i18n="settings.deleteAccount">Удалить аккаунт навсегда</button>
+    <button class="btn btn-danger" style="width:100%;margin-top:9px;" id="logoutBtn" data-i18n="settings.logout">Выйти из аккаунта</button>
+  </div>
+</div>
+
+<div class="modal" id="adminModal" role="dialog" aria-modal="true">
+  <div class="modal-panel">
+    <div class="modal-controls"><button class="ctrl-btn" data-close="adminModal" aria-label="Закрыть"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button></div>
+    <h2 data-i18n="admin.title">Админ-панель</h2>
+    <div class="admin-tabs">
+      <button class="admin-tab active" data-tab="admin-chats" data-i18n="admin.chats">Чаты</button>
+      <button class="admin-tab" data-tab="admin-feedback" data-i18n="admin.feedback">Фидбек</button>
+    </div>
+    <div id="admin-chats" class="admin-tab-content active">
+      <div id="adminChatList"></div>
+      <div id="adminChatView" style="display:none;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <button class="btn btn-secondary" onclick="backToChats()" style="min-height:36px;padding:0 12px;font-size:12px;">← <span data-i18n="common.back">Назад</span></button>
+          <span id="adminChatName" style="font-weight:800;"></span>
+        </div>
+        <div class="admin-chat-container">
+          <div class="chat-messages" id="adminChatMessages"></div>
+          <button class="chat-scroll-down" id="adminScrollDown" aria-label="К последним сообщениям">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="chat-reply-preview" id="adminReplyPreview" style="display:none">
+            <div class="chat-reply-preview-content">
+              <b id="adminReplyName"></b>
+              <span id="adminReplyText"></span>
+            </div>
+            <button class="chat-reply-cancel" id="adminReplyCancel">✕</button>
+          </div>
+          <div class="chat-input-row">
+            <input type="text" id="adminChatInput" placeholder="Ответить..." data-i18n-placeholder="adminChat.placeholder">
+            <button class="chat-send-btn" id="adminChatSendBtn">➤</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="admin-feedback" class="admin-tab-content">
+      <div id="adminFeedbackList"></div>
+    </div>
+  </div>
+</div>
+<div class="modal" id="deleteAccountModal" role="dialog" aria-modal="true">
+  <div class="modal-panel">
+    <div class="modal-controls"><button class="ctrl-btn" data-close-delete="1" aria-label="Закрыть"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button></div>
+    <div style="text-align:center;margin-bottom:20px;"><div style="font-size:42px;">🥺</div><h2 data-i18n="deleteAccount.title">Удалить аккаунт?</h2><p data-i18n="deleteAccount.desc">Это действие необратимо. Все данные будут утеряны навсегда.</p></div>
+    <button class="btn btn-danger" id="confirmDeleteBtn" disabled style="width:100%;">Удалить (10)</button>
+    <button class="btn btn-secondary" id="cancelDeleteBtn" style="width:100%;margin-top:9px;" data-i18n="common.cancel">Отмена</button>
+  </div>
+</div>
+
+<div class="modal" id="feedbackModal" role="dialog" aria-modal="true">
+  <div class="modal-panel">
+    <div class="modal-controls"><button class="ctrl-btn" data-close="feedbackModal" aria-label="Закрыть"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button></div>
+    <h2 data-i18n="feedback.title">Обратная связь</h2>
+    <p data-i18n="feedback.desc">Нашли баг или есть идея? Напишите нам.</p>
+    <form id="feedbackForm">
+      <div class="custom-select" id="fbCustomSelect" style="margin-bottom:10px">
+        <button class="custom-select-btn" type="button" id="fbSelectBtn">
+          <span class="custom-select-label" id="fbSelectLabel" data-i18n="feedback.type.bug">🐛 Ошибка / Баг</span>
+          <svg class="custom-select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="custom-select-panel" id="fbSelectPanel">
+          <button data-value="bug" data-i18n="feedback.type.bug">🐛 Ошибка / Баг</button>
+          <button data-value="idea" data-i18n="feedback.type.idea">💡 Идея / Предложение</button>
+          <button data-value="complaint" data-i18n="feedback.type.complaint">⚠️ Жалоба</button>
+          <button data-value="other" data-i18n="feedback.type.other">💬 Другое</button>
+        </div>
+      </div>
+      <textarea class="textarea" id="fbText" placeholder="Опишите детали..." required maxlength="2000"></textarea>
+      <button class="btn btn-primary" type="submit" style="margin-top:10px;" data-i18n="common.send">Отправить</button>
+    </form>
+    <button class="btn btn-secondary" style="width:100%;margin-top:9px;" onclick="closeModal('feedbackModal')" data-i18n="common.cancel">Отмена</button>
+  </div>
+</div>
+
+<div class="modal" id="feedbackThanksModal" role="dialog" aria-modal="true">
+  <div class="modal-panel thanks-panel">
+    <div class="thanks-icon">💌</div>
+    <h2 data-i18n="feedbackThanks.title">Спасибо за отзыв!</h2>
+    <p data-i18n="feedbackThanks.desc">Мы обязательно прочитаем и учтём. Ты делаешь Отклик лучше 💜</p>
+    <button class="btn btn-primary" onclick="closeModal('feedbackThanksModal')" data-i18n="common.close">Закрыть</button>
+  </div>
+</div>
+
+<div class="modal" id="supportModal" role="dialog" aria-modal="true">
+  <div class="modal-panel">
+    <div class="support-header">
+      <div class="support-avatar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="4"/>
+          <path d="M4 20c0-4 4-6 8-6s8 2 8 6"/>
+        </svg>
+      </div>
+      <div class="support-info">
+        <strong data-i18n="support.name">Клик</strong>
+        <span class="support-status" id="supportStatus" data-i18n="support.status">в сети</span>
+      </div>
+      <button class="support-close" id="supportCloseBtn" data-close="supportModal" aria-label="Закрыть">✕</button>
+    </div>
+    <div class="support-hours-banner" id="supportHoursBanner"></div>
+    <div class="support-chat-area">
+      <div class="chat-messages" id="chatMessages"></div>
+      <div class="chat-reply-preview" id="chatReplyPreview" style="display:none;">
+        <div class="chat-reply-preview-content"><b id="chatReplyName"></b><span id="chatReplyText"></span></div>
+        <button class="chat-reply-cancel" id="chatReplyCancel" aria-label="Отменить">✕</button>
+      </div>
+      <div class="chat-input-row">
+        <input type="text" id="chatInput" placeholder="Написать Клик..." data-i18n-placeholder="chat.placeholder" maxlength="500">
+        <button id="chatSendBtn" class="chat-send-btn" aria-label="Отправить">➤</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="logoutConfirmModal" role="dialog" aria-modal="true">
+  <div class="modal-panel" style="text-align:center;">
+    <div class="modal-controls"><button class="ctrl-btn" data-close="logoutConfirmModal" aria-label="Закрыть"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button></div>
+    <div style="font-size:48px;margin-bottom:14px;">👋</div>
+    <h2 data-i18n="logout.title">Выйти из аккаунта?</h2>
+    <p data-i18n="logout.desc">Твой прогресс сохранится. Ты сможешь вернуться в любой момент.</p>
+    <button class="btn btn-danger" id="confirmLogoutBtn" style="width:100%;" data-i18n="logout.confirm">Выйти</button>
+    <button class="btn btn-secondary" data-close="logoutConfirmModal" style="width:100%;margin-top:9px;" data-i18n="logout.stay">Остаться</button>
+  </div>
+</div>
+
+<div class="modal" id="welcomeSupportModal" role="dialog" aria-modal="true" aria-labelledby="welcomeSupportTitle">
+  <div class="modal-panel" style="max-width:460px;text-align:center;padding:36px 26px 28px;position:relative;">
+    <div style="position:absolute;top:12px;right:12px;">
+      <button class="ctrl-btn" id="welcomeSupportHideBtn" aria-label="Не показывать снова" title="Не показывать снова" style="font-size:11px;width:auto;padding:0 10px;border-radius:12px;min-height:28px;">Больше не показывать</button>
+    </div>
+    <div style="font-size:64px;line-height:1;margin-bottom:18px;filter:drop-shadow(0 4px 12px rgba(240,120,150,.25));">💗</div>
+    <h2 id="welcomeSupportTitle" style="margin:0 0 16px;font-size:23px;letter-spacing:-.03em;line-height:1.3;" data-i18n="welcomeSupport.title">Будь добрее к себе</h2>
+    <p style="text-align:left;line-height:1.7;font-size:13.5px;color:var(--muted);margin:0 0 16px;" data-i18n="welcomeSupport.intro">Отклик создан, чтобы помочь тебе исследовать свой голос. Но помни: это всего лишь инструмент. Он не определяет, кто ты, и не оценивает, насколько «правильно» ты звучишь.</p>
+    <div style="text-align:left;background:var(--surface2);border:1px solid var(--border);border-radius:16px;padding:16px 18px;margin:0 0 16px;font-size:13px;line-height:1.75;color:var(--text);">
+      <div data-i18n="welcomeSupport.point1">💛 Твой голос не определяет твою ценность.</div>
+      <div data-i18n="welcomeSupport.point2">🧠 Психическое здоровье — всегда на первом месте.</div>
+      <div data-i18n="welcomeSupport.point3">🌱 Прогресс требует времени. Это нормально.</div>
+      <div data-i18n="welcomeSupport.point4">🤍 Если что-то расстраивает — можно сделать паузу.</div>
+      <div data-i18n="welcomeSupport.point5">🎯 Твой путь, твои правила, твой темп.</div>
+    </div>
+    <p style="text-align:left;line-height:1.7;font-size:13.5px;color:var(--text);margin:0 0 20px;" data-i18n="welcomeSupport.closing">Радуйся маленьким победам. Замечай, как звучит именно твой голос, — и наслаждайся этим. Ты уже молодец, что здесь.</p>
+    <button class="btn btn-primary" id="welcomeSupportCta" style="width:100%;" data-i18n="welcomeSupport.cta">Спасибо, я с собой бережно 🤍</button>
+  </div>
+</div>
+
+<div class="modal" id="healthChecklistModal" aria-hidden="true">
+  <div class="modal-panel">
+    <div class="modal-controls"><button type="button" class="ctrl-btn" data-close="healthChecklistModal" aria-label="Close">×</button></div>
+    <h2 data-i18n="healthChecklist.title">Подготовка к тренировке</h2>
+    <p data-i18n="healthChecklist.desc">Пара минут заботы о связках — и можно начинать.</p>
+    <label class="health-checklist-item"><input type="checkbox" class="health-checklist-check"><span data-i18n="healthChecklist.water">💧 Я попил(а) воды</span></label>
+    <label class="health-checklist-item"><input type="checkbox" class="health-checklist-check"><span data-i18n="healthChecklist.warmup">🤸 Разогрел(а) шею и плечи</span></label>
+    <label class="health-checklist-item"><input type="checkbox" class="health-checklist-check"><span data-i18n="healthChecklist.noStrain">🌿 Не буду форсировать звук</span></label>
+    <p data-i18n="healthChecklist.tip" style="text-align:center;margin:14px 0">Не спеши. Твой голос скажет спасибо.</p>
+    <div style="display:grid;gap:9px">
+      <button type="button" class="btn btn-primary" id="healthChecklistStart" disabled data-i18n="healthChecklist.start">Готов(а) начать</button>
+      <button type="button" class="btn btn-secondary" id="healthChecklistSnooze" data-i18n="healthChecklist.snooze">Напомнить через 2 часа</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="voiceTiredModal" aria-hidden="true">
+  <div class="modal-panel" style="text-align:center;max-width:480px">
+    <div class="modal-controls"><button type="button" class="ctrl-btn" id="voiceTiredSkip" data-i18n="voiceTired.skip" aria-label="Skip">Пропустить</button></div>
+    <div style="font-size:42px;margin-bottom:10px">😌</div>
+    <h2 data-i18n="voiceTired.title">Голос устал — это нормально</h2>
+    <p data-i18n="voiceTired.desc">Отдохни. Связки восстанавливаются, когда мы даём им паузу. Твой голос не подведёт — просто нужно время.</p>
+    <div id="breathingExercise">
+      <div class="breathing-circle" id="breathingCircle"><span id="breathingPhase">Вдох</span></div>
+      <div id="breathingCountdown" style="font-size:13px;font-weight:800;color:var(--muted)">30</div>
+      <div id="breathingCycle" style="font-size:12px;color:var(--muted);margin-top:7px">Цикл 1 из 5</div>
+    </div>
+    <div id="breathingDone" style="display:none;font-size:24px;font-weight:800;color:var(--primary);padding:30px 0">🌸 <span data-i18n="voiceTired.done">Готово</span></div>
+    <button type="button" class="btn btn-primary" id="voiceTiredFinish" style="display:none" data-i18n="voiceTired.finish">Завершить</button>
+  </div>
+</div>
+
+<div class="modal" id="scenariosModal" role="dialog" aria-modal="true" aria-labelledby="scenariosTitle" aria-hidden="true">
+  <div class="modal-panel" style="max-width:640px">
+    <div class="modal-controls"><button class="ctrl-btn" data-close="scenariosModal" aria-label="Закрыть"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="18" x2="6" y2="6"/></svg></button></div>
+    <h2 id="scenariosTitle" data-i18n="scenarios.title">Сценарии практики</h2>
+    <p data-i18n="scenarios.desc">Выбери ситуацию и читай текст вслух. Или добавь свой.</p>
+    <div class="scenarios-grid" id="scenariosGrid"></div>
+    <div class="scenarios-custom-section">
+      <h3 class="scenarios-custom-title" data-i18n="scenarios.customTitle">Свои тексты</h3>
+      <p class="scenarios-custom-hint" id="scenariosCustomHint"></p>
+      <div id="scenariosCustomList"></div>
+      <button type="button" class="btn btn-secondary" id="scenariosAddCustomBtn" style="width:100%;margin-top:10px" data-i18n="scenarios.addCustom">+ Добавить свой текст</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="addCustomTextModal" role="dialog" aria-modal="true" aria-labelledby="addCustomTextTitle" aria-hidden="true">
+  <div class="modal-panel" style="max-width:480px">
+    <div class="modal-controls"><button class="ctrl-btn" data-close="addCustomTextModal" aria-label="Закрыть"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="18" x2="6" y2="6"/></svg></button></div>
+    <h2 id="addCustomTextTitle" data-i18n="scenarios.addTitle">Свой текст</h2>
+    <p data-i18n="scenarios.addDesc">Название — чтобы потом было легко найти. Текст — до 2000 символов.</p>
+    <label class="field-label" for="customTextLabel" data-i18n="scenarios.addLabel">Название</label>
+    <input class="input" id="customTextLabel" maxlength="40" placeholder="Например: «Моё резюме»" style="margin-bottom:14px">
+    <label class="field-label" for="customTextBody" data-i18n="scenarios.addText">Текст</label>
+    <textarea class="textarea" id="customTextBody" maxlength="2000" rows="6" placeholder="Введи текст для практики…" style="margin-bottom:16px;resize:vertical;min-height:100px"></textarea>
+    <div style="display:grid;gap:9px">
+      <button type="button" class="btn btn-primary" id="customTextSaveBtn" data-i18n="common.save">Сохранить</button>
+      <button type="button" class="btn btn-secondary" data-close="addCustomTextModal" data-i18n="common.cancel">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<div class="strain-warning" id="strainWarning" role="status" aria-live="polite"></div>
+
+
+
+
+<div class="global-lock-overlay" id="globalLockOverlay" aria-hidden="true"><div class="global-lock-spinner" role="status" aria-label="Завершение сессии"></div></div>
+<script type="module" src="./app.js"></script>
+<div class="modal" id="coinShopModal" role="dialog" aria-modal="true" aria-labelledby="coinShopTitle" aria-hidden="true">
+  <div class="modal-panel" style="max-width:560px">
+    <div class="modal-controls"><button class="ctrl-btn" data-close="coinShopModal" aria-label="Закрыть">×</button></div>
+    <h2 id="coinShopTitle" data-i18n="coinShop.title">Магазин монеток</h2>
+    <p data-i18n="coinShop.desc">Трать монетки на удобства и косметику. Базовые функции всегда бесплатны.</p>
+    <div style="font-size:14px;font-weight:800;margin-bottom:16px;text-align:center"><span class="coin-icon" aria-hidden="true">✦</span> <span id="coinShopBalance">0</span></div>
+    <div id="coinShopItems"></div>
+  </div>
+</div>
+</body>
+</html>
